@@ -19,17 +19,10 @@ If enabled and properly configured, kPicasa Gallery will use the WP-Cache mechan
 This plugin uses Lightbox and requires that prototype and scriptaculous are already installed.
 WordPress 2.2 come with both libraries already installed.
 
-Homepage: http://www.boloxe.com/kpicasa_gallery/
-
 == Installation ==
 
 1. Unzip the archive to your wp-content/plugins folder.
 1. Activate the plugin through the 'Plugins' menu in WordPress
-1. Create post or a page with "KPICASA_GALLERY(your_google_username)" as the only content.
-   For example, if your Picasa username is john123, you should create a post or page with: KPICASA_GALLERY(john123)
+1. Create post or a page with "KPICASA\_GALLERY(your\_google\_username)" as the only content.
+   For example, if your Picasa username is john123, you should create a post or page with: KPICASA\_GALLERY(john123)
 1. Browse to that post or page, voilà!
-
-== Frequently Asked Questions ==
-
-`<?php code(); // goes in backticks ?>`
-
