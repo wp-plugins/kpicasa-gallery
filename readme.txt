@@ -2,7 +2,7 @@
 Tags: picasa, gallery, photo
 Requires at least: 2.2
 Tested up to: 2.2
-Stable tag: trunk
+Stable tag: 0.0.2
 
 Display your Picasa Web Galleries in a post or in a page.
 
