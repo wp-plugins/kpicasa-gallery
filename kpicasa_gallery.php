@@ -141,14 +141,18 @@ if ( !class_exists('KPicasaGallery') ) {
 	}
 }
 
-if ( function_exists('add_action') ) {
-	add_action('wp_head', 'initKPicasaGallery');
-}
-if ( function_exists('add_filter') ) {
-	add_filter('the_content', 'loadKPicasaGallery');
-}
-if ( function_exists('wp_enqueue_script') ) {
-	wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.03.3');
+if ( function_exists('is_admin') ) {
+	if ( !is_admin() ) {
+		if ( function_exists('add_action') ) {
+			add_action('wp_head', 'initKPicasaGallery');
+		}
+		if ( function_exists('add_filter') ) {
+			add_filter('the_content', 'loadKPicasaGallery');
+		}
+		if ( function_exists('wp_enqueue_script') ) {
+			wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.03.3');
+		}
+	}
 }
 
 function initKPicasaGallery() {
