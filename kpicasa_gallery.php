@@ -3,13 +3,14 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.0.1
+Version: 0.0.2
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/
 
 Version History
 ---------------------------------------------------------------------------
 2007-07-14	0.0.1		First release
+2007-08-23	0.0.2		Bug fix (conflicted with TinyMCE)
 
 TODO
 ---------------------------------------------------------------------------
