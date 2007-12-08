@@ -12,12 +12,12 @@ This plugin displays your Picasa Web Galleries in a post or in a page simply by
 creating a post or a page with a special keyword. All the images are kept on the
 Picasa Web Gallery server.
 
-**Please note that PHP5 is required**
+**Please note that PHP5 is required.**
 
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache mechanism.
 
 This plugin uses Lightbox and requires that prototype and scriptaculous are already installed.
-WordPress 2.2 come with both libraries already installed.
+WordPress 2.2 and up come with both libraries already installed.
 
 == Installation ==
 
@@ -29,6 +29,6 @@ WordPress 2.2 come with both libraries already installed.
 
 == Frequently Asked Questions ==
 
-= Why am I getting this error: Parse error: syntax error, unexpected T_STRING, expecting T_OLD_FUNCTION or T_FUNCTION or T_VAR or '}' =
+= Why am I getting this error: `Parse error: syntax error, unexpected T_STRING, expecting T_OLD_FUNCTION or T_FUNCTION or T_VAR or '}'` =
 
 Make sure you are running PHP 5. This plugin uses features only available since PHP5. It will not work with PHP 4.
