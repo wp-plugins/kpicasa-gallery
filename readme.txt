@@ -29,7 +29,6 @@ WordPress 2.2 and up come with both libraries already installed.
 
 == Frequently Asked Questions ==
 
-= Why am I getting this error:
-Parse error: syntax error, unexpected T_STRING, expecting T_OLD_FUNCTION or T_FUNCTION or T_VAR or '}' =
+= Parse error: syntax error, unexpected T_STRING, expecting T_OLD_FUNCTION or T_FUNCTION or T_VAR or '}' =
 
-Make sure you are running PHP 5. This plugin uses features only available since PHP5. It will not work with PHP 4.
+If you are getting that error, make sure your server is running PHP 5. This plugin uses features only available since PHP5, it will not work with PHP 4.
