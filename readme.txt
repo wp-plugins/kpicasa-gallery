@@ -17,7 +17,7 @@ Picasa Web Gallery server.
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache mechanism.
 
 This plugin uses Lightbox and requires that prototype and scriptaculous are already installed.
-WordPress 2.2 and up come with both libraries already installed.
+WordPress 2.2 and up comes with both libraries already installed.
 
 == Installation ==
 
