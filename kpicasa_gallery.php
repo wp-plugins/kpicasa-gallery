@@ -3,23 +3,25 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.0.2
+Version: 0.0.3
 Author: Guillaume Hébert
-Author URI: http://www.boloxe.com/
+Author URI: http://www.boloxe.com/techblog/
 
 Version History
 ---------------------------------------------------------------------------
 2007-07-14	0.0.1		First release
 2007-08-23	0.0.2		Bug fix (conflicted with TinyMCE)
+2007-08-23	0.0.3		More robust error handling (no new features)
 
 TODO
 ---------------------------------------------------------------------------
 Find out more about the following format:
   http://groups.google.com/group/Google-Picasa-Data-API/browse_thread/thread/22ba3936e4edbacf#msg_d2c3e29af488a09b
 
-*/
 
-/*  Copyright 2007  Guillaume Hébert  (email : kag@boloxe.com)
+Licence
+---------------------------------------------------------------------------
+    Copyright 2007  Guillaume Hébert  (email : kag@boloxe.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -44,24 +46,35 @@ if ( !class_exists('KPicasaGallery') ) {
 	class KPicasaGallery {
 		private $username;
 
-		function __construct($username) {
+		public function __construct($username) {
 			$this->username = $username;
 			$this->cacheTimeout = 60 * 60 * 24;
 
-			if ( isset($_GET['photo']) && strlen($_GET['photo']) ) {
-				$this->showPhoto($_GET['photo']);
-			} elseif ( isset($_GET['album']) && strlen($_GET['album']) ) {
-				$this->showAlbum($_GET['album']);
+			if ( isset($_GET['album']) && strlen($_GET['album']) ) {
+				$return_code = $this->showAlbum($_GET['album']);
+				if( is_wp_error($return_code) ) {
+					foreach( $return_code->get_error_messages() as $message ) {
+						print $message;
+					}
+				}
 			} else {
-				$this->showGallery();
+				$return_code = $this->showGallery();
+				if( is_wp_error($return_code) ) {
+					foreach( $return_code->get_error_messages() as $message ) {
+						print $message;
+					}
+				}
 			}
 		}
 
-		public function showGallery() {
+		private function showGallery() {
 			$data = wp_cache_get('kPicasaGallery', 'kPicasaGallery');
 			if ( false == $data ) {
 				$url  = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."?kind=album";
 				$data = file_get_contents($url);
+				if ($data == false) {
+					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable file_get_contents().") );
+				}
 				$data = str_replace('gphoto:', 'gphoto_', $data);
 				$data = str_replace('media:', 'media_', $data);
 				wp_cache_set('kPicasaGallery', $data, 'kPicasaGallery', $this->cacheTimeout);
@@ -87,9 +100,11 @@ if ( !class_exists('KPicasaGallery') ) {
 				print "<br />$nbPhotos photo".($nbPhotos > 1 ? 's' : '').'<br /></p>';
 				print '<div style="clear: both;" />&nbsp;</div>';
 			}
+			
+			return true;
 		}
 
-		public function showAlbum($album) {
+		private function showAlbum($album) {
 			$backURL = remove_query_arg('album');
 			print "<a href='$backURL'>&laquo; Back</a><br /><br />";
 
@@ -97,6 +112,9 @@ if ( !class_exists('KPicasaGallery') ) {
 			if ( false == $data ) {
 				$url = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."/album/".urlencode($album)."?kind=photo";
 				$data = file_get_contents($url);
+				if ($data == false) {
+					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable file_get_contents().") );
+				}
 				$data = str_replace('gphoto:', 'gphoto_', $data);
 				$data = str_replace('media:', 'media_', $data);
 				wp_cache_set('kPicasaGallery_'.$album, $data, 'kPicasaGallery', $this->cacheTimeout);
@@ -138,6 +156,8 @@ if ( !class_exists('KPicasaGallery') ) {
 				}
 				$i++;
 			}
+			
+			return true;
 		}
 	}
 }
