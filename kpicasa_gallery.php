@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.0.3
+Version: 0.0.4
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -11,7 +11,8 @@ Version History
 ---------------------------------------------------------------------------
 2007-07-14	0.0.1		First release
 2007-08-23	0.0.2		Bug fix (conflicted with TinyMCE)
-2007-08-23	0.0.3		More robust error handling (no new features)
+2007-12-07	0.0.3		More robust error handling (no new features)
+2007-12-13	0.0.4		If allow_url_fopen is not enabled, will now cURL
 
 TODO
 ---------------------------------------------------------------------------
@@ -71,9 +72,9 @@ if ( !class_exists('KPicasaGallery') ) {
 			$data = wp_cache_get('kPicasaGallery', 'kPicasaGallery');
 			if ( false == $data ) {
 				$url  = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."?kind=album";
-				$data = file_get_contents($url);
+				$data = kPicasaFetch($url);
 				if ($data == false) {
-					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable file_get_contents().") );
+					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable allow_url_fopen or cURL.") );
 				}
 				$data = str_replace('gphoto:', 'gphoto_', $data);
 				$data = str_replace('media:', 'media_', $data);
@@ -111,9 +112,9 @@ if ( !class_exists('KPicasaGallery') ) {
 			$data = wp_cache_get('kPicasaGallery_'.$album, 'kPicasaGallery');
 			if ( false == $data ) {
 				$url = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."/album/".urlencode($album)."?kind=photo";
-				$data = file_get_contents($url);
+				$data = kPicasaFetch($url);
 				if ($data == false) {
-					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable file_get_contents().") );
+					return new WP_Error( 'kpicasa_gallery-cant-open-url', __("Error: your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable allow_url_fopen or cURL.") );
 				}
 				$data = str_replace('gphoto:', 'gphoto_', $data);
 				$data = str_replace('media:', 'media_', $data);
@@ -197,6 +198,23 @@ function loadKPicasaGallery ($content = '') {
 	}
 
 	return $content;
+}
+
+function kPicasaFetch($url)
+{
+	$data = false;
+	if (ini_get('allow_url_fopen') == '1')
+	{
+		$data = file_get_contents($url);
+	}
+	elseif (function_exists('curl_init'))
+	{
+		$ch = curl_init($url);
+		curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
+		$data = curl_exec($ch);
+		curl_close($ch);
+	}
+	return $data;
 }
 
 ?>
