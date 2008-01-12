@@ -17,37 +17,30 @@ Picasa Web Gallery server.
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache 
 mechanism.
 
-This plugin uses Lightbox and requires that prototype and scriptaculous are 
-already installed. WordPress 2.2 and up comes with both libraries already 
-installed.
+You have to choice of using either Lightbox or Highslide for displaying the
+large version of your photos.
 
 == Installation ==
 
 1. Unzip the archive to your `wp-content/plugins/` folder.
-1. Activate the plugin through the `Plugins` menu in WordPress
-1. Create post or a page with `KPICASA_GALLERY(YourPicasaUsername)` as the only 
-content. For example, if your Picasa username is john123, you would create a 
-post or page with `KPICASA_GALLERY(john123)`
-1. Browse to that post or page, voilà!
+2. Activate the plugin through the `Plugins` menu in WordPress
+3. Go in the `Options` menu and select `kPicasa Gallery`. Set your parameters.
+4. Create post or a page with `KPICASA_GALLERY` as the only content.
+5. Browse to that post or page, voilà!
 
 == Advanced usage ==
-Optionally, you can enable the paginator:
 
-1. Display 10 albums per page: `KPICASA_GALLERY(YourPicasaUsername, 10)`
-1. Display 10 albums per page, and 20 pictures per page in an album: `KPICASA_GALLERY(YourPicasaUsername, 10, 20)`
-
-You can also optionally decide to only display specific albums. For this, you 
+Optionally, you can decide to only display specific albums. For this, you 
 will have to go to the Picasa Web Albums and log into your account. You will 
-then need to find the internal album named, as explained below.
+then need to find the internal album name, as explained below.
 
 As an example, for an album named "Trip to Europe", the URL of that album
 will probably look like this: `http://picasaweb.google.com/YourPicasaUsername/TripToEurope`.
 The internal album name is the last portion (`TripToEurope`). You will need to 
 find the internal album name for every album you want to display.
 
-The following will display 2 albums per page, 10 pictures per page in an album
-and only show 3 specific albums:
-`KPICASA_GALLERY(YourPicasaUsername, 2, 10, TripToEurope, TripToAsia, TripToAustralia)`
+You will then need to call kPicasa Gallery like this (this will show 3 specific albums):
+`KPICASA_GALLERY(TripToEurope, TripToAsia, TripToAustralia)`
 
 == Frequently Asked Questions ==
 
