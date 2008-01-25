@@ -7,7 +7,8 @@ $picEngine    = get_option( 'kpg_picEngine' );
 
 // See if the user has posted us some information
 // If they did, this hidden field will be set to 'Y'
-if( $_POST[ 'kpg_save' ] == 'Y' ) {
+if( $_POST[ 'kpg_save' ] == 'Y' )
+{
 	// Read their posted value
 	$username     = $_POST[ 'kpg_username' ];
 	$albumPerPage = intval( $_POST[ 'kpg_albumPerPage' ] );
@@ -16,7 +17,7 @@ if( $_POST[ 'kpg_save' ] == 'Y' ) {
 	
 	$albumPerPage = $albumPerPage > 0 ? $albumPerPage : 0;
 	$photoPerPage = $photoPerPage > 0 ? $photoPerPage : 0;
-	$picEngine    = in_array($picEngine, array('lightbox', 'highslide')) ? $picEngine : 'highslide';
+	$picEngine    = in_array($picEngine, array('lightbox', 'highslide', '')) ? $picEngine : 'highslide';
 
 	// Save the posted value in the database
 	update_option( 'kpg_username',     $username );
@@ -26,7 +27,6 @@ if( $_POST[ 'kpg_save' ] == 'Y' ) {
 
 	// Put an options updated message on the screen
 	print '<div id="message" class="updated fade"><p><strong>Options saved.</strong></p></div>';
-	//_e('Options saved.', 'mt_trans_domain' );
 }
 
 $albumPerPage = $albumPerPage > 0 ? $albumPerPage : '';
@@ -67,7 +67,9 @@ print '<th scope="row">Engine to show full-size pictures:</th>';
 $chk = $picEngine == 'highslide' ? ' checked="checked"' : '';
 print '<td><input type="radio" name="kpg_picEngine" value="highslide" id="kpg_picEngine_highslide"'.$chk.'> <label for="kpg_picEngine_highslide">Highslide</label> (<a href="http://vikjavev.no/highslide/" target="_blank">visit homepage</a>)<br/>';
 $chk = $picEngine == 'lightbox' ? ' checked="checked"' : '';
-print '<input type="radio" name="kpg_picEngine" value="lightbox" id="kpg_picEngine_lightbox"'.$chk.'> <label for="kpg_picEngine_lightbox">Lightbox</label> (<a href="http://www.huddletogether.com/projects/lightbox2/" target="_blank">visit homepage</a>)</td>';
+print '<input type="radio" name="kpg_picEngine" value="lightbox" id="kpg_picEngine_lightbox"'.$chk.'> <label for="kpg_picEngine_lightbox">Lightbox</label> (<a href="http://www.huddletogether.com/projects/lightbox2/" target="_blank">visit homepage</a>)<br />';
+$chk = $picEngine == '' ? ' checked="checked"' : '';
+print '<input type="radio" name="kpg_picEngine" value="" id="kpg_picEngine_none"'.$chk.'> <label for="kpg_picEngine_none">None</label> (I already have some other kind of mecanism)</td>';
 print '</tr>';
 print '</table>';
 

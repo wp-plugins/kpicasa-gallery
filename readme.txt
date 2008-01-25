@@ -12,11 +12,6 @@ This plugin displays your Picasa Web Galleries in a post or in a page simply by
 creating a post or a page with a special keyword. All the images are kept on the
 Picasa Web Gallery server.
 
-**Please note that as of 0.1.0, the call to kPicasa Gallery has changed. You
-must go in Admin / Options / kPicasa Gallery and set your username there. So the
-new way to call kPicasa Gallery is now simply `KPICASA_GALLERY` (without any
-parenthesis). See the installation and advanced usage for more information**
-
 **Please note that PHP5 is required.**
 
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache 

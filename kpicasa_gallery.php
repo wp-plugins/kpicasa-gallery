@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.0
+Version: 0.1.1
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -22,6 +22,12 @@ Version History
 						users. Corrected a bug that affected those who chose to
 						display their album in a post (instead of a page). Added
 						the option to use Lightbox or Highslide.
+2007-01-25	0.1.1		Fixed the error messages. Fixed a pagination bug. Moved
+						the inline styles in favor of a CSS file. Commented the
+						code. Added the option to use no full-size picture
+						engine (for those running their own). Added album
+						descriptions. This fixes almost all the requests I
+						received.
 
 TODO
 ---------------------------------------------------------------------------
@@ -49,46 +55,72 @@ Licence
     Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307  USA
 */
 
-if ( !defined(KPICASA_GALLERY_DIR) ) {
+if ( version_compare(PHP_VERSION, '5.0.0', '<') )
+{
+	print 'kPicasa Gallery requires PHP version 5 or greater. You are running PHP version '.PHP_VERSION;
+	exit;
+}
+if ( !defined(KPICASA_GALLERY_DIR) )
+{
 	define('KPICASA_GALLERY_DIR', '/wp-content/plugins/'.dirname(plugin_basename(__FILE__)));
 }
 
 $kpg_picEngine = get_option( 'kpg_picEngine' );
 
-if ( function_exists('is_admin') ) {
-	if ( !is_admin() ) {
-		if ( function_exists('add_action') ) {
+if ( function_exists('is_admin') )
+{
+	if ( !is_admin() ) 
+	{
+		if ( function_exists('add_action') ) 
+		{
 			add_action('wp_head', 'initKPicasaGallery');
 		}
-		if ( function_exists('add_filter') ) {
+		if ( function_exists('add_filter') ) 
+		{
 			add_filter('the_content', 'loadKPicasaGallery');
 		}
-		if ( function_exists('wp_enqueue_script') ) {
-			if ($kpg_picEngine == 'lightbox') {
+		
+		if ( function_exists('wp_enqueue_script') ) 
+		{
+			if ( $kpg_picEngine == 'lightbox' ) 
+			{
 				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.03.3');
-			} else {
+			} 
+			elseif ( $kpg_picEngine == 'highslide' )
+			{
 				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '1.0');
 			}
 		}
-	} else {
-		if ( function_exists('add_action') ) {
+	} 
+	else 
+	{
+		if ( function_exists('add_action') ) 
+		{
 			add_action('admin_menu', 'adminKPicasaGallery');
 		}
 	}
 }
 
-function initKPicasaGallery() {
+function initKPicasaGallery()
+{
 	global $kpg_picEngine;
-	if ($kpg_picEngine == 'lightbox') {
-		$lightboxDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR.'/lightbox2';
+	$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
+	
+	print "<link rel='stylesheet' href='$baseDir/kpicasa_gallery.css' type='text/css' media='screen' />";
+	
+	if ( $kpg_picEngine == 'lightbox' )
+	{
+		$lightboxDir = "$baseDir/lightbox2";
 		print "<link rel='stylesheet' href='$lightboxDir/css/lightbox.css' type='text/css' media='screen' />";
 
 		print '<script type="text/javascript">';
 		print "	fileLoadingImage = '$lightboxDir/images/loading.gif';";
 		print "	fileBottomNavCloseImage = '$lightboxDir/images/closelabel.gif';";
 		print '</script>';
-	} else {
-		$highslideDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR.'/highslide';
+	}
+	elseif ( $kpg_picEngine == 'highslide' )
+	{
+		$highslideDir = "$baseDir/highslide";
 		print '<script type="text/javascript">';
 		print "	hs.graphicsDir = '$highslideDir/graphics/';";
 		print "	hs.showCredits = false;";
@@ -101,23 +133,28 @@ function initKPicasaGallery() {
 	}
 }
 
-function loadKPicasaGallery ($content = '') {
+function loadKPicasaGallery ( $content = '' )
+{
 	$tmp = strip_tags(trim($content));
 	$regex = '/^KPICASA_GALLERY[\s]*(\(.*\))?$/';
 
-	if ( "KPICASA_GALLERY" == substr($tmp, 0, 15) && preg_match($regex, $tmp, $matches) ) {
+	if ( 'KPICASA_GALLERY' == substr($tmp, 0, 15) && preg_match($regex, $tmp, $matches) ) 
+	{
 		ob_start();
-		$showOnlyAlbums  = array();
-		if (isset($matches[1])) {
+		$showOnlyAlbums = array();
+		if ( isset($matches[1]) ) 
+		{
 			$args = explode(',', substr( substr($matches[1], 0, strlen($matches[1])-1), 1 ));
-			if ( count($args) > 0 ) {
-				foreach( $args as $value ) {
-					$showOnlyAlbums[] = trim( $value );
+			if ( count($args) > 0 ) 
+			{
+				foreach( $args as $value )
+				{
+					$showOnlyAlbums[] = trim($value);
 				}
 			}
 		}
 		
-		require_once( 'kpg.class.php' );
+		require_once('kpg.class.php');
 		$gallery = new KPicasaGallery($showOnlyAlbums);
 		return ob_get_clean();
 	}
@@ -125,10 +162,13 @@ function loadKPicasaGallery ($content = '') {
 	return $content;
 }
 
-function adminKPicasaGallery() {
-	if ( function_exists('add_options_page') ) {
+function adminKPicasaGallery()
+{
+	if ( function_exists('add_options_page') ) 
+	{
 		add_options_page('kPicasa Gallery', 'kPicasa Gallery', 8, dirname(__FILE__).'/param.php');
 	}
 }
 
 ?>
+
