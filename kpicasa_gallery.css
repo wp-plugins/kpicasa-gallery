@@ -1,0 +1,27 @@
+.kpicasa-gallery-album-cover { /* the picture thumbnail representing the album */
+	border: solid 1px black; 
+	margin-right: 10px;
+}
+.kpicasa-gallery-album-title { /* the link containing name of the album */
+	font-weight: bold;
+}
+.kpicasa-gallery-album-description { /* the box with the album description */
+	padding: 10px; 
+	background-color: #FFFFE1;
+	border: solid 1px #CECF8E;
+}
+.kpicasa-gallery-thumbnail { /* the picture thumbnails */
+	border: solid 1px black !important;
+}
+.kpicasa-gallery-paginator { /* block containing the pagination */
+	font-weight: bold;
+}
+.kpicasa-gallery-paginator-on { /* the current page */
+	border: solid 1px #C0C0C0;
+	padding: 4px;
+}
+.kpicasa-gallery-paginator-off { /* the other pages */
+	border: solid 1px #F0F0F0;
+	padding: 4px;
+}
+
