@@ -378,4 +378,3 @@ if ( !class_exists('KPicasaGallery') )
 }
 
 ?>
-
