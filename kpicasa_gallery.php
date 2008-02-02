@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.2
+Version: 0.1.3
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -13,7 +13,7 @@ Version History
 2007-08-23	0.0.2		Bug fix (conflicted with TinyMCE)
 2007-12-07	0.0.3		More robust error handling (no new features)
 2007-12-13	0.0.4		If allow_url_fopen is not enabled, will now try cURL
-2008-01-05	0.0.5		Added UTF-8 support, hopefully better detection of PHP4 
+2008-01-05	0.0.5		Added UTF-8 support, hopefully better detection of PHP4
 						(instead of crashing), optional pagination, and optional
 						selection of specific albums to be displayed.
 2007-01-12	0.1.0		Changed the way kPicasa is called: created an
@@ -30,6 +30,14 @@ Version History
 						received.
 2007-01-25	0.1.2		Fixed a bug where kPicasa was sending content and
 						breaking PHP redirections.
+2007-01-25	0.1.3		Improved error messages. Easier to visually customize
+						via a CSS file, instead of inline styling. Ability to
+						display galleries from more than one Picasa account,
+						each in a different page/post. New options to change the
+						number of albums to display per line, and the number of
+						pictures per line. Now displays the album description if
+						it exists. It is now possible to not use any engine to
+						display the full-sized picture.
 
 TODO
 ---------------------------------------------------------------------------
@@ -71,32 +79,32 @@ $kpg_picEngine = get_option( 'kpg_picEngine' );
 
 if ( function_exists('is_admin') )
 {
-	if ( !is_admin() ) 
+	if ( !is_admin() )
 	{
-		if ( function_exists('add_action') ) 
+		if ( function_exists('add_action') )
 		{
 			add_action('wp_head', 'initKPicasaGallery');
 		}
-		if ( function_exists('add_filter') ) 
+		if ( function_exists('add_filter') )
 		{
 			add_filter('the_content', 'loadKPicasaGallery');
 		}
 		
-		if ( function_exists('wp_enqueue_script') ) 
+		if ( function_exists('wp_enqueue_script') )
 		{
-			if ( $kpg_picEngine == 'lightbox' ) 
+			if ( $kpg_picEngine == 'lightbox' )
 			{
 				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.03.3');
-			} 
+			}
 			elseif ( $kpg_picEngine == 'highslide' )
 			{
 				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '1.0');
 			}
 		}
-	} 
-	else 
+	}
+	else
 	{
-		if ( function_exists('add_action') ) 
+		if ( function_exists('add_action') )
 		{
 			add_action('admin_menu', 'adminKPicasaGallery');
 		}
@@ -107,9 +115,9 @@ function initKPicasaGallery()
 {
 	global $kpg_picEngine;
 	$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
-	
+
 	print "<link rel='stylesheet' href='$baseDir/kpicasa_gallery.css' type='text/css' media='screen' />";
-	
+
 	if ( $kpg_picEngine == 'lightbox' )
 	{
 		$lightboxDir = "$baseDir/lightbox2";
@@ -140,24 +148,33 @@ function loadKPicasaGallery ( $content = '' )
 	$tmp = strip_tags(trim($content));
 	$regex = '/^KPICASA_GALLERY[\s]*(\(.*\))?$/';
 
-	if ( 'KPICASA_GALLERY' == substr($tmp, 0, 15) && preg_match($regex, $tmp, $matches) ) 
+	if ( 'KPICASA_GALLERY' == substr($tmp, 0, 15) && preg_match($regex, $tmp, $matches) )
 	{
 		ob_start();
 		$showOnlyAlbums = array();
-		if ( isset($matches[1]) ) 
+		$username = null;
+		if ( isset($matches[1]) )
 		{
 			$args = explode(',', substr( substr($matches[1], 0, strlen($matches[1])-1), 1 ));
-			if ( count($args) > 0 ) 
+			if ( count($args) > 0 )
 			{
 				foreach( $args as $value )
 				{
-					$showOnlyAlbums[] = trim($value);
+					$value = str_replace(' ', '', $value);
+					if ($username == null && 'username:' == substr($value, 0, 9) && strlen($value) > 9)
+					{
+						$username = substr($value, 9);
+					}
+					else
+					{
+						$showOnlyAlbums[] = $value;
+					}
 				}
 			}
 		}
-		
+
 		require_once('kpg.class.php');
-		$gallery = new KPicasaGallery($showOnlyAlbums);
+		$gallery = new KPicasaGallery($username, $showOnlyAlbums);
 		return ob_get_clean();
 	}
 
@@ -166,7 +183,7 @@ function loadKPicasaGallery ( $content = '' )
 
 function adminKPicasaGallery()
 {
-	if ( function_exists('add_options_page') ) 
+	if ( function_exists('add_options_page') )
 	{
 		add_options_page('kPicasa Gallery', 'kPicasa Gallery', 8, dirname(__FILE__).'/param.php');
 	}

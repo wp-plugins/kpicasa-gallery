@@ -41,9 +41,3 @@ find the internal album name for every album you want to display.
 
 You will then need to call kPicasa Gallery like this (this will show 3 specific albums):
 `KPICASA_GALLERY(TripToEurope, TripToAsia, TripToAustralia)`
-
-== Frequently Asked Questions ==
-
-= Parse error: syntax error, unexpected T_STRING, expecting T_OLD_FUNCTION or T_FUNCTION or T_VAR or '}' =
-
-If you are getting that error, make sure your server is running PHP 5. This plugin uses features only available since PHP5, it will not work with PHP 4.
