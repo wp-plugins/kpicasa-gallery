@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/kpicasa_gallery/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.3
+Version: 0.1.4
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -38,6 +38,8 @@ Version History
 						pictures per line. Now displays the album description if
 						it exists. It is now possible to not use any engine to
 						display the full-sized picture.
+2007-02-13	0.1.4		Improved the routine to connect to Picasa. Some users
+						reported errors since 0.1.0.
 
 TODO
 ---------------------------------------------------------------------------
@@ -185,7 +187,7 @@ function adminKPicasaGallery()
 {
 	if ( function_exists('add_options_page') )
 	{
-		add_options_page('kPicasa Gallery', 'kPicasa Gallery', 8, dirname(__FILE__).'/param.php');
+		add_options_page('kPicasa Gallery Plugin Options', 'kPicasa Gallery', 8, KPICASA_GALLERY_DIR.'/param.php');
 	}
 }
 
