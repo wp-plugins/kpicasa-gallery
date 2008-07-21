@@ -48,14 +48,9 @@ print '<h2>kPicasa Gallery Plugin Options</h2>';
 print '<form name="form1" method="post" action="'.str_replace( '%7E', '~', $_SERVER['REQUEST_URI']).'">';
 print '<input type="hidden" name="kpg_save" value="Y">';
 
-print '<p class="submit">';
-print '<input type="submit" name="Submit" value="Update Options &raquo;" />';
-print '</p>';
-
 // General settings
-print '<fieldset class="options">';
-print '<legend>General settings</legend>';
-print '<table class="optiontable">';
+print '<h3>General settings</h3>';
+print '<table class="form-table">';
 
 print '<tr valign="top">';
 print '<th scope="row">Picasa Web Albums Username:</th>';
@@ -73,12 +68,10 @@ print '<input type="radio" name="kpg_picEngine" value="" id="kpg_picEngine_none"
 print '</tr>';
 
 print '</table>';
-print '</fieldset>';
 
 // Album List
-print '<fieldset class="options">';
-print '<legend>Album List</legend>';
-print '<table class="optiontable">';
+print '<h3>Album List</h3>';
+print '<table class="form-table">';
 
 print '<tr valign="top">';
 print '<th scope="row">Number of albums to show per page:</th>';
@@ -92,12 +85,10 @@ print '<td><input name="kpg_albumPerRow" type="text" id="kpg_albumPerRow" value=
 print '</tr>';
 
 print '</table>';
-print '</fieldset>';
 
 // Picture List
-print '<fieldset class="options">';
-print '<legend>Picture List</legend>';
-print '<table class="optiontable">';
+print '<h3>Picture List</h3>';
+print '<table class="form-table">';
 
 print '<tr valign="top">';
 print '<th scope="row">Number of pictures to show per page:</th>';
@@ -110,11 +101,10 @@ print '<td><input name="kpg_photoPerRow" type="text" id="kpg_photoPerRow" value=
 print '</tr>';
 
 print '</table>';
-print '</fieldset>';
 
 
 print '<p class="submit">';
-print '<input type="submit" name="Submit" value="Update Options &raquo;" />';
+print '<input type="submit" name="Submit" value="Save Changes" />';
 print '</p>';
 
 print '</form>';
