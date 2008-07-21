@@ -34,7 +34,7 @@ if( $_POST[ 'kpg_save' ] == 'Y' )
 	update_option( 'kpg_photoPerRow',  $photoPerRow );
 
 	// Put an options updated message on the screen
-	print '<div id="message" class="updated fade"><p><strong>Options saved.</strong></p></div>';
+	print '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
 }
 
 $albumPerPage = $albumPerPage > 0 ? $albumPerPage : '';
