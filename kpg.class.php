@@ -5,22 +5,32 @@ if ( !class_exists('KPicasaGallery') )
 	class KPicasaGallery
 	{
 		private $username;
-		private $nbAlbumsPerPage;
-		private $nbPhotosPerPage;
 		private $picEngine;
 		private $showOnlyAlbums;
 		private $cacheTimeout;
 
+		private $nbAlbumsPerPage;
+		private $nbAlbumsPerRow;
+		private $albumThumbSize;
+
+		private $nbPhotosPerPage;
+		private $nbPhotosPerRow;
+		private $photoThumbSize;
+
 		public function __construct($username = null, $showOnlyAlbums)
 		{
 			$this->username        = $username != null ? $username : get_option( 'kpg_username' );
-			$this->nbAlbumsPerPage = get_option( 'kpg_albumPerPage' );
-			$this->nbAlbumsPerRow  = get_option( 'kpg_albumPerRow' );
-			$this->nbPhotosPerPage = get_option( 'kpg_photoPerPage' );
-			$this->nbPhotosPerRow  = get_option( 'kpg_photoPerRow' );
 			$this->picEngine       = get_option( 'kpg_picEngine' );
 			$this->showOnlyAlbums  = is_array( $showOnlyAlbums ) ? $showOnlyAlbums : array();
 			$this->cacheTimeout    = 60 * 60 * 1;
+
+			$this->nbAlbumsPerPage = get_option( 'kpg_albumPerPage' );
+			$this->nbAlbumsPerRow  = get_option( 'kpg_albumPerRow' );
+			$this->albumThumbSize  = get_option( 'kpg_albumThumbSize' );
+
+			$this->nbPhotosPerPage = get_option( 'kpg_photoPerPage' );
+			$this->nbPhotosPerRow  = get_option( 'kpg_photoPerRow' );
+			$this->photoThumbSize  = get_option( 'kpg_photoThumbSize' );
 
 			if ( !strlen( $this->username ) )
 			{
@@ -52,16 +62,19 @@ if ( !class_exists('KPicasaGallery') )
 			{
 				if ( count($this->showOnlyAlbums) == 1 )
 				{
-					$album = $this->showOnlyAlbums[0];
-					$direct = true;
+					$tmp     = explode('#', $this->showOnlyAlbums[0]);
+					$album   = $tmp[0];
+					$direct  = true;
+					$authKey = isset($tmp[1]) ? $tmp[1] : '';
 				}
 				else
 				{
-					$album = $_GET['album'];
-					$direct = false;
+					$album   = $_GET['album'];
+					$direct  = false;
+					$authKey = '';
 				}
 
-				if ( $this->checkError( $this->displayPictures($album, $direct) ) )
+				if ( $this->checkError( $this->displayPictures($album, $direct, $authKey) ) )
 				{
 					return false;
 				}
@@ -105,12 +118,12 @@ if ( !class_exists('KPicasaGallery') )
 			$page = isset($_GET['kpgp']) && intval($_GET['kpgp']) > 1 ? intval($_GET['kpgp']) : 1; // kpgp = kPicasa Gallery Page
 
 			$url = get_permalink();
-			if ($page > 1)
+			if ( $page > 1 )
 			{
 				$url = add_query_arg('kpgp', $page, $url);
 			}
 
-			if ($this->nbAlbumsPerPage > 0)
+			if ( $this->nbAlbumsPerPage > 0 )
 			{
 				$start = ($page - 1) * $this->nbAlbumsPerPage;
 				$stop  = $start + $this->nbAlbumsPerPage - 1;
@@ -134,7 +147,7 @@ if ( !class_exists('KPicasaGallery') )
 				if ($i >= $start && $i <= $stop &&
 				( !count($this->showOnlyAlbums) || in_array((string) $album->gphoto_name, $this->showOnlyAlbums) ))
 				{
-					if ($j % $this->nbAlbumsPerRow == 0)
+					if ( $j % $this->nbAlbumsPerRow == 0 )
 					{
 						$remainingWidth = 100;
 						if ($j > 0)
@@ -158,6 +171,13 @@ if ( !class_exists('KPicasaGallery') )
 					$thumbURL  = (string) $album->media_group->media_thumbnail['url'];
 					$thumbH    = (string) $album->media_group->media_thumbnail['height'];
 					$thumbW    = (string) $album->media_group->media_thumbnail['width'];
+
+					if ( $this->albumThumbSize != 160 )
+					{
+						$thumbURL = str_replace('/s160-c/', '/s'.$this->albumThumbSize.'-c/', $thumbURL);
+						$thumbH   = round( ($this->albumThumbSize / $thumbH) * $thumbH );
+						$thumbW   = round( ($this->albumThumbSize / $thumbW) * $thumbW );
+					}
 
 					print "<a href='$albumURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $title)."' class='kpg-thumb $class' /></a>";
 					print "<div class='kpg-title'><a href='$albumURL'>$title</a></div>";
@@ -198,7 +218,7 @@ if ( !class_exists('KPicasaGallery') )
 			return true;
 		}
 
-		private function displayPictures($album, $direct = false)
+		private function displayPictures($album, $direct = false, $authKey = '')
 		{
 			//----------------------------------------
 			// Get the XML
@@ -207,6 +227,10 @@ if ( !class_exists('KPicasaGallery') )
 			if ( false === $data )
 			{
 				$url = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."/album/".urlencode($album)."?kind=photo";
+				if ( strlen($authKey) > 0 )
+				{
+					$url .= '&authkey='.$authKey;
+				}
 				$data = $this->fetch($url);
 				if ( is_wp_error($data) )
 				{
@@ -271,7 +295,7 @@ if ( !class_exists('KPicasaGallery') )
 			//----------------------------------------
 			$page = isset($_GET['kpap']) && intval($_GET['kpap']) > 1 ? intval($_GET['kpap']) : 1; // kpap = kPicasa Album Page
 
-			if ($this->nbPhotosPerPage > 0)
+			if ( $this->nbPhotosPerPage > 0 )
 			{
 				$start = ($page - 1) * $this->nbPhotosPerPage;
 				$stop  = $start + $this->nbPhotosPerPage - 1;
@@ -280,6 +304,16 @@ if ( !class_exists('KPicasaGallery') )
 			{
 				$start = 0;
 				$stop = count( $xml->entry ) - 1;
+			}
+
+			$thumbIndex = 1; // 144px
+			if ( $this->photoThumbSize == 72 )
+			{
+				$thumbIndex = 0;
+			}
+			elseif ( $this->photoThumbSize == 288 )
+			{
+				$thumbIndex = 2;
 			}
 
 			//----------------------------------------
@@ -307,10 +341,10 @@ if ( !class_exists('KPicasaGallery') )
 					print "<td width='$width%'>";
 
 					$summary  = wp_specialchars( (string) $photo->summary );
-					$thumbURL = (string) $photo->media_group->media_thumbnail[1]['url'];
-					$thumbH   = (string) $photo->media_group->media_thumbnail[1]['height'];
-					$thumbW   = (string) $photo->media_group->media_thumbnail[1]['width'];
-					$fullURL  = str_replace('s144', 's800', $thumbURL);
+					$thumbURL = (string) $photo->media_group->media_thumbnail[$thumbIndex]['url'];
+					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
+					$thumbW   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['width'];
+					$fullURL  = str_replace('/s144/', '/s800/', $thumbURL);
 
 					if ( $this->picEngine == 'lightbox' )
 					{
@@ -416,12 +450,12 @@ if ( !class_exists('KPicasaGallery') )
 		{
 			$fopen_failed = false;
 			$curl_failed  = false;
-			
+
 			// todo: add timeouts?
-			
+
 			if ( ini_get('allow_url_fopen') == '1' )
 			{
-				$data = file_get_contents($url);
+				$data = @file_get_contents($url);
 				if ($data !== false)
 				{
 					return $data;
@@ -440,7 +474,7 @@ if ( !class_exists('KPicasaGallery') )
 				}
 				$curl_failed = true;
 			}
-			
+
 			if ($fopen_failed && $curl_failed)
 			{
 				return new WP_Error( 'kpicasa_gallery-cant-open-url', __("<strong>Error:</strong> your PHP configuration reports that it allows kPicasa Gallery to connect to Picasa Web Albums, but in fact it seems your web host is blocking outgoing requests. Please ask your administrator to allow outgoing requests via file_get_contents() or cURL.") );

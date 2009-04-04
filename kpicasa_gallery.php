@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.5
+Version: 0.1.6
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -42,6 +42,9 @@ Version History
 						reported errors since 0.1.0.
 2007-07-21	0.1.5		Compatible with Wordpress 2.6.0. Updated the look and
 						feel of the configuration page.
+2008-04-04	0.1.6		Compatible with Wordpress 2.7.x. Can now show individual
+						unlisted albums. Can now select thumbnail sizes. Text
+						can now be typed around the album.
 
 TODO
 ---------------------------------------------------------------------------
@@ -92,16 +95,16 @@ if ( function_exists('is_admin') )
 		{
 			add_filter('the_content', 'loadKPicasaGallery');
 		}
-		
+
 		if ( function_exists('wp_enqueue_script') )
 		{
 			if ( $kpg_picEngine == 'lightbox' )
 			{
-				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.03.3');
+				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.04');
 			}
 			elseif ( $kpg_picEngine == 'highslide' )
 			{
-				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '1.0');
+				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '3.3.22');
 			}
 		}
 	}
@@ -149,13 +152,14 @@ function initKPicasaGallery()
 function loadKPicasaGallery ( $content = '' )
 {
 	$tmp = strip_tags(trim($content));
-	$regex = '/^KPICASA_GALLERY[\s]*(\(.*\))?$/';
+	//$regex = '/^KPICASA_GALLERY[\s]*(\(.*\))?$/';
+	$regex = '/^[\s]*KPICASA_GALLERY[\s]*(\(.*\))?[\s]*$/m';
 
-	if ( 'KPICASA_GALLERY' == substr($tmp, 0, 15) && preg_match($regex, $tmp, $matches) )
+	if ( preg_match($regex, $tmp, $matches) )
 	{
-		ob_start();
 		$showOnlyAlbums = array();
-		$username = null;
+		$username       = null;
+
 		if ( isset($matches[1]) )
 		{
 			$args = explode(',', substr( substr($matches[1], 0, strlen($matches[1])-1), 1 ));
@@ -177,8 +181,11 @@ function loadKPicasaGallery ( $content = '' )
 		}
 
 		require_once('kpg.class.php');
+
+		ob_start();
 		$gallery = new KPicasaGallery($username, $showOnlyAlbums);
-		return ob_get_clean();
+		$buffer  = ob_get_clean();
+		return str_replace($matches[0], $buffer, $content);
 	}
 
 	return $content;
