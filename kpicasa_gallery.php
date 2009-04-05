@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.6
+Version: 0.1.7
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -45,6 +45,7 @@ Version History
 2008-04-04	0.1.6		Compatible with Wordpress 2.7.x. Can now show individual
 						unlisted albums. Can now select thumbnail sizes. Text
 						can now be typed around the album.
+2007-07-21	0.1.7		Fixed a nasty bug from 0.1.6
 
 TODO
 ---------------------------------------------------------------------------

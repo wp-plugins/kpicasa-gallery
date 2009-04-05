@@ -172,7 +172,7 @@ if ( !class_exists('KPicasaGallery') )
 					$thumbH    = (string) $album->media_group->media_thumbnail['height'];
 					$thumbW    = (string) $album->media_group->media_thumbnail['width'];
 
-					if ( $this->albumThumbSize != 160 )
+					if ( $this->albumThumbSize != false && $this->albumThumbSize != 160 )
 					{
 						$thumbURL = str_replace('/s160-c/', '/s'.$this->albumThumbSize.'-c/', $thumbURL);
 						$thumbH   = round( ($this->albumThumbSize / $thumbH) * $thumbH );
