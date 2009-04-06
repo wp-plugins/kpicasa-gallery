@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.7
+Version: 0.1.8
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -45,7 +45,8 @@ Version History
 2008-04-04	0.1.6		Compatible with Wordpress 2.7.x. Can now show individual
 						unlisted albums. Can now select thumbnail sizes. Text
 						can now be typed around the album.
-2007-07-21	0.1.7		Fixed a nasty bug from 0.1.6
+2009-04-05	0.1.7		Fixed a nasty bug from 0.1.6
+2009-04-06	0.1.8		Refreshed Javascript libraries
 
 TODO
 ---------------------------------------------------------------------------
@@ -101,11 +102,11 @@ if ( function_exists('is_admin') )
 		{
 			if ( $kpg_picEngine == 'lightbox' )
 			{
-				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects'), '2.04');
+				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects', 'scriptaculous-builder'), '2.04');
 			}
 			elseif ( $kpg_picEngine == 'highslide' )
 			{
-				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '3.3.22');
+				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '4.1.2');
 			}
 		}
 	}
@@ -131,8 +132,8 @@ function initKPicasaGallery()
 		print "<link rel='stylesheet' href='$lightboxDir/css/lightbox.css' type='text/css' media='screen' />";
 
 		print '<script type="text/javascript">';
-		print "	fileLoadingImage = '$lightboxDir/images/loading.gif';";
-		print "	fileBottomNavCloseImage = '$lightboxDir/images/closelabel.gif';";
+		print "	LightboxOptions.fileLoadingImage = '$lightboxDir/images/loading.gif';";
+		print "	LightboxOptions.fileBottomNavCloseImage = '$lightboxDir/images/closelabel.gif';";
 		print '</script>';
 	}
 	elseif ( $kpg_picEngine == 'highslide' )
