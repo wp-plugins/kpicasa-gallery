@@ -23,7 +23,7 @@ if( $_POST[ 'kpg_save' ] == 'Y' )
 	$photoPerRow  = intval( $_POST[ 'kpg_photoPerRow' ] );
 	$photoThumbSize    = intval( $_POST[ 'kpg_photoThumbSize' ] );
 
-	$picEngine    = in_array($picEngine, array('lightbox', 'slimbox', 'highslide', '')) ? $picEngine : 'highslide';
+	$picEngine    = in_array($picEngine, array('lightbox', 'highslide', '')) ? $picEngine : 'highslide';
 	$albumPerPage = $albumPerPage > 0 ? $albumPerPage : 0;
 	$albumPerRow  = $albumPerRow  > 0 ? $albumPerRow  : 1;
 	$albumThumbSize    = in_array($albumThumbSize, array(32, 48, 64, 72, 144, 160)) ? $albumThumbSize : 160;
@@ -73,8 +73,6 @@ $chk = $picEngine == 'highslide' ? ' checked="checked"' : '';
 print '<td><input type="radio" name="kpg_picEngine" value="highslide" id="kpg_picEngine_highslide"'.$chk.'> <label for="kpg_picEngine_highslide">Highslide</label> (<a href="http://vikjavev.no/highslide/" target="_blank">visit homepage</a>)<br/>';
 $chk = $picEngine == 'lightbox' ? ' checked="checked"' : '';
 print '<input type="radio" name="kpg_picEngine" value="lightbox" id="kpg_picEngine_lightbox"'.$chk.'> <label for="kpg_picEngine_lightbox">Lightbox</label> (<a href="http://www.huddletogether.com/projects/lightbox2/" target="_blank">visit homepage</a>)<br />';
-//$chk = $picEngine == 'slimbox' ? ' checked="checked"' : '';
-//print '<input type="radio" name="kpg_picEngine" value="slimbox" id="kpg_picEngine_slimbox"'.$chk.'> <label for="kpg_picEngine_slimbox">Slimbox</label> (<a href="http://www.digitalia.be/software/slimbox" target="_blank">visit homepage</a>)<br />';
 $chk = $picEngine == '' ? ' checked="checked"' : '';
 print '<input type="radio" name="kpg_picEngine" value="" id="kpg_picEngine_none"'.$chk.'> <label for="kpg_picEngine_none">None</label> (I already have some other kind of mecanism)</td>';
 print '</tr>';
