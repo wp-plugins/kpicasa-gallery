@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.8
+Version: 0.1.9
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -47,6 +47,10 @@ Version History
 						can now be typed around the album.
 2009-04-05	0.1.7		Fixed a nasty bug from 0.1.6
 2009-04-06	0.1.8		Refreshed Javascript libraries
+2009-04-07	0.1.9		Added Slimbox, Thickbox, fixed a problem with Highslide.
+						Also fixed a bug where a selecting anything but a 144px
+						picture thumbnail would make a picture of the wrong size
+						appear in the javascript popup
 
 TODO
 ---------------------------------------------------------------------------
@@ -100,13 +104,21 @@ if ( function_exists('is_admin') )
 
 		if ( function_exists('wp_enqueue_script') )
 		{
-			if ( $kpg_picEngine == 'lightbox' )
+			if ( $kpg_picEngine == 'highslide' )
+			{
+				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '4.1.2');
+			}
+			elseif ( $kpg_picEngine == 'lightbox' )
 			{
 				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects', 'scriptaculous-builder'), '2.04');
 			}
-			elseif ( $kpg_picEngine == 'highslide' )
+			elseif ( $kpg_picEngine == 'slimbox2' )
 			{
-				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '4.1.2');
+				wp_enqueue_script('slimbox2', KPICASA_GALLERY_DIR.'/slimbox2/js/slimbox2.js', array('jquery'), '2.02');
+			}
+			elseif ( $kpg_picEngine == 'thickbox' )
+			{
+				wp_enqueue_script('thickbox');
 			}
 		}
 	}
@@ -124,30 +136,47 @@ function initKPicasaGallery()
 	global $kpg_picEngine;
 	$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
 
-	print "<link rel='stylesheet' href='$baseDir/kpicasa_gallery.css' type='text/css' media='screen' />";
+	print "<link rel='stylesheet' href='$baseDir/kpicasa_gallery.css' type='text/css' media='screen' />\n";
 
-	if ( $kpg_picEngine == 'lightbox' )
+	if ( $kpg_picEngine == 'highslide' )
 	{
-		$lightboxDir = "$baseDir/lightbox2";
-		print "<link rel='stylesheet' href='$lightboxDir/css/lightbox.css' type='text/css' media='screen' />";
+		$picEngineDir = "$baseDir/highslide";
+		print "<link rel='stylesheet' href='$picEngineDir/highslide.css' type='text/css' media='screen' />\n";
+		print "<link rel='stylesheet' href='$picEngineDir/kpicasa.css' type='text/css' media='screen' />\n";
+		print "<!--[if lt IE 7]>\n";
+		print "<link rel='stylesheet' type='text/css' href='$picEngineDir/highslide-styles-ie6.css' />\n";
+		print "<![endif]-->\n";
 
-		print '<script type="text/javascript">';
-		print "	LightboxOptions.fileLoadingImage = '$lightboxDir/images/loading.gif';";
-		print "	LightboxOptions.fileBottomNavCloseImage = '$lightboxDir/images/closelabel.gif';";
-		print '</script>';
+		print "<script type='text/javascript'>\n";
+		print "	hs.graphicsDir      = '$picEngineDir/graphics/';\n";
+		print "	hs.showCredits      = false;\n";
+		print "	hs.outlineType      = 'rounded-white';\n";
+		print "	hs.wrapperClassName = 'highslide-white';\n";
+		print "	if (hs.registerOverlay) {\n";
+			print "		hs.registerOverlay({ thumbnailId: null, overlayId: 'controlbar', position: 'top right', hideOnMouseOut: true });\n";
+		print "	}\n";
+		print "</script>\n";
 	}
-	elseif ( $kpg_picEngine == 'highslide' )
+	elseif ( $kpg_picEngine == 'lightbox' )
 	{
-		$highslideDir = "$baseDir/highslide";
-		print '<script type="text/javascript">';
-		print "	hs.graphicsDir = '$highslideDir/graphics/';";
-		print "	hs.showCredits = false;";
-		print "	hs.outlineType = 'rounded-white';";
-		print "if (hs.registerOverlay) {";
-			print "	hs.registerOverlay( { thumbnailId: null, overlayId: 'controlbar', position: 'top right', hideOnMouseOut: true } );";
-		print "}";
-		print '</script>';
-		print "<link rel='stylesheet' href='$highslideDir/highslide.css' type='text/css' media='screen' />";
+		$picEngineDir = "$baseDir/lightbox2";
+		print "<link rel='stylesheet' href='$picEngineDir/css/lightbox.css' type='text/css' media='screen' />\n";
+
+		print "<script type='text/javascript'>\n";
+		print "	LightboxOptions.fileLoadingImage        = '$picEngineDir/images/loading.gif';\n";
+		print "	LightboxOptions.fileBottomNavCloseImage = '$picEngineDir/images/closelabel.gif';\n";
+		print "</script>\n";
+	}
+	elseif ( $kpg_picEngine == 'slimbox2' )
+	{
+		$picEngineDir = "$baseDir/slimbox2";
+		print "<link rel='stylesheet' href='$picEngineDir/css/slimbox2.css' type='text/css' media='screen' />\n";
+	}
+	elseif ( $kpg_picEngine == 'thickbox' )
+	{
+		$picEngineDir = "$baseDir/thickbox";
+		$picEngineDir = "http://www.boloxe.com/blog/wp-includes/js/thickbox";
+		print "<link rel='stylesheet' href='$picEngineDir/thickbox.css' type='text/css' media='screen' />\n";
 	}
 }
 

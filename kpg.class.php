@@ -344,21 +344,10 @@ if ( !class_exists('KPicasaGallery') )
 					$thumbURL = (string) $photo->media_group->media_thumbnail[$thumbIndex]['url'];
 					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
 					$thumbW   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['width'];
-					$fullURL  = str_replace('/s144/', '/s800/', $thumbURL);
+					$fullURL  = (string) $photo->media_group->media_thumbnail[1]['url'];
+					$fullURL  = str_replace('/s144/', '/s800/', $fullURL);
 
-					if ( $this->picEngine == 'lightbox' )
-					{
-						if ( strlen($summary) )
-						{
-							print "<a href='$fullURL' rel='lightbox[kpicasa_gallery]' title='".str_replace("'", "&#39;", $summary)."'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-							print "<div class='kpg-summary'>$summary</div>";
-						}
-						else
-						{
-							print "<a href='$fullURL' rel='lightbox[kpicasa_gallery]'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
-						}
-					}
-					elseif ( $this->picEngine == 'highslide' )
+					if ( $this->picEngine == 'highslide' )
 					{
 						if ( strlen($summary) )
 						{
@@ -369,6 +358,31 @@ if ( !class_exists('KPicasaGallery') )
 						else
 						{
 							print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+						}
+					}
+					elseif ( $this->picEngine == 'lightbox' || $this->picEngine == 'slimbox2' || $this->picEngine == 'thickbox' )
+					{
+						if ( $this->picEngine == 'lightbox' )
+						{
+							$markup = "rel='lightbox[kpicasa_gallery]'";
+						}
+						elseif ( $this->picEngine == 'slimbox2' )
+						{
+							$markup = "rel='lightbox-kpicasa_gallery'";
+						}
+						elseif ( $this->picEngine == 'thickbox' )
+						{
+							$markup = "class='thickbox' rel='kpicasa_gallery'";
+						}
+
+						if ( strlen($summary) )
+						{
+							print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+							print "<div class='kpg-summary'>$summary</div>";
+						}
+						else
+						{
+							print "<a href='$fullURL' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
 						}
 					}
 					else

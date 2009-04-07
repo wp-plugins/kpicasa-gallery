@@ -1,12 +1,12 @@
 <?php
 
-$username     = get_option( 'kpg_username' );
-$picEngine    = get_option( 'kpg_picEngine' );
-$albumPerPage = get_option( 'kpg_albumPerPage' );
-$albumPerRow  = get_option( 'kpg_albumPerRow' );
+$username       = get_option( 'kpg_username' );
+$picEngine      = get_option( 'kpg_picEngine' );
+$albumPerPage   = get_option( 'kpg_albumPerPage' );
+$albumPerRow    = get_option( 'kpg_albumPerRow' );
 $albumThumbSize = get_option( 'kpg_albumThumbSize' );
-$photoPerPage = get_option( 'kpg_photoPerPage' );
-$photoPerRow  = get_option( 'kpg_photoPerRow' );
+$photoPerPage   = get_option( 'kpg_photoPerPage' );
+$photoPerRow    = get_option( 'kpg_photoPerRow' );
 $photoThumbSize = get_option( 'kpg_photoThumbSize' );
 
 // See if the user has posted us some information
@@ -14,32 +14,32 @@ $photoThumbSize = get_option( 'kpg_photoThumbSize' );
 if( $_POST[ 'kpg_save' ] == 'Y' )
 {
 	// Read their posted value
-	$username     = $_POST[ 'kpg_username' ];
-	$picEngine    = $_POST[ 'kpg_picEngine' ];
-	$albumPerPage = intval( $_POST[ 'kpg_albumPerPage' ] );
-	$albumPerRow  = intval( $_POST[ 'kpg_albumPerRow' ] );
-	$albumThumbSize    = intval( $_POST[ 'kpg_albumThumbSize' ] );
-	$photoPerPage = intval( $_POST[ 'kpg_photoPerPage' ] );
-	$photoPerRow  = intval( $_POST[ 'kpg_photoPerRow' ] );
-	$photoThumbSize    = intval( $_POST[ 'kpg_photoThumbSize' ] );
+	$username       = $_POST[ 'kpg_username' ];
+	$picEngine      = $_POST[ 'kpg_picEngine' ];
+	$albumPerPage   = intval( $_POST[ 'kpg_albumPerPage' ] );
+	$albumPerRow    = intval( $_POST[ 'kpg_albumPerRow' ] );
+	$albumThumbSize = intval( $_POST[ 'kpg_albumThumbSize' ] );
+	$photoPerPage   = intval( $_POST[ 'kpg_photoPerPage' ] );
+	$photoPerRow    = intval( $_POST[ 'kpg_photoPerRow' ] );
+	$photoThumbSize = intval( $_POST[ 'kpg_photoThumbSize' ] );
 
-	$picEngine    = in_array($picEngine, array('lightbox', 'highslide', '')) ? $picEngine : 'highslide';
-	$albumPerPage = $albumPerPage > 0 ? $albumPerPage : 0;
-	$albumPerRow  = $albumPerRow  > 0 ? $albumPerRow  : 1;
-	$albumThumbSize    = in_array($albumThumbSize, array(32, 48, 64, 72, 144, 160)) ? $albumThumbSize : 160;
-	$photoPerPage = $photoPerPage > 0 ? $photoPerPage : 0;
-	$photoPerRow  = $photoPerRow  > 0 ? $photoPerRow  : 2;
-	$photoThumbSize    = in_array($photoThumbSize, array(72, 144, 288)) ? $photoThumbSize : 144;
+	$picEngine      = in_array($picEngine, array('highslide', 'lightbox', 'slimbox2', 'thickbox', '')) ? $picEngine : 'highslide';
+	$albumPerPage   = $albumPerPage > 0 ? $albumPerPage : 0;
+	$albumPerRow    = $albumPerRow  > 0 ? $albumPerRow  : 1;
+	$albumThumbSize = in_array($albumThumbSize, array(32, 48, 64, 72, 144, 160)) ? $albumThumbSize : 160;
+	$photoPerPage   = $photoPerPage > 0 ? $photoPerPage : 0;
+	$photoPerRow    = $photoPerRow  > 0 ? $photoPerRow  : 2;
+	$photoThumbSize = in_array($photoThumbSize, array(72, 144, 288)) ? $photoThumbSize : 144;
 
 	// Save the posted value in the database
-	update_option( 'kpg_username',     $username );
-	update_option( 'kpg_picEngine',    $picEngine );
-	update_option( 'kpg_albumPerPage', $albumPerPage );
-	update_option( 'kpg_albumPerRow',  $albumPerRow );
-	update_option( 'kpg_albumThumbSize',    $albumThumbSize );
-	update_option( 'kpg_photoPerPage', $photoPerPage );
-	update_option( 'kpg_photoPerRow',  $photoPerRow );
-	update_option( 'kpg_photoThumbSize',    $photoThumbSize );
+	update_option( 'kpg_username',       $username );
+	update_option( 'kpg_picEngine',      $picEngine );
+	update_option( 'kpg_albumPerPage',   $albumPerPage );
+	update_option( 'kpg_albumPerRow',    $albumPerRow );
+	update_option( 'kpg_albumThumbSize', $albumThumbSize );
+	update_option( 'kpg_photoPerPage',   $photoPerPage );
+	update_option( 'kpg_photoPerRow',    $photoPerRow );
+	update_option( 'kpg_photoThumbSize', $photoThumbSize );
 
 	// Put an options updated message on the screen
 	print '<div id="message" class="updated fade"><p><strong>Settings saved.</strong></p></div>';
@@ -73,6 +73,10 @@ $chk = $picEngine == 'highslide' ? ' checked="checked"' : '';
 print '<td><input type="radio" name="kpg_picEngine" value="highslide" id="kpg_picEngine_highslide"'.$chk.'> <label for="kpg_picEngine_highslide">Highslide</label> (<a href="http://vikjavev.no/highslide/" target="_blank">visit homepage</a>)<br/>';
 $chk = $picEngine == 'lightbox' ? ' checked="checked"' : '';
 print '<input type="radio" name="kpg_picEngine" value="lightbox" id="kpg_picEngine_lightbox"'.$chk.'> <label for="kpg_picEngine_lightbox">Lightbox</label> (<a href="http://www.huddletogether.com/projects/lightbox2/" target="_blank">visit homepage</a>)<br />';
+$chk = $picEngine == 'slimbox2' ? ' checked="checked"' : '';
+print '<input type="radio" name="kpg_picEngine" value="slimbox2" id="kpg_picEngine_slimbox2"'.$chk.'> <label for="kpg_picEngine_slimbox2">Slimbox 2</label> (<a href="http://www.digitalia.be/software/slimbox2" target="_blank">visit homepage</a>)<br />';
+$chk = $picEngine == 'thickbox' ? ' checked="checked"' : '';
+print '<input type="radio" name="kpg_picEngine" value="thickbox" id="kpg_picEngine_thickbox"'.$chk.'> <label for="kpg_picEngine_thickbox">Thickbox</label> (<a href="http://jquery.com/demo/thickbox/" target="_blank">visit homepage</a>)<br />';
 $chk = $picEngine == '' ? ' checked="checked"' : '';
 print '<input type="radio" name="kpg_picEngine" value="" id="kpg_picEngine_none"'.$chk.'> <label for="kpg_picEngine_none">None</label> (I already have some other kind of mecanism)</td>';
 print '</tr>';
