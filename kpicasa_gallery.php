@@ -5,7 +5,6 @@ Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
 Version: 0.2.0
 Author: Guillaume Hébert
-Author URI: http://www.boloxe.com/techblog/
 
 Version History
 ---------------------------------------------------------------------------
