@@ -1,7 +1,7 @@
 /******************************************************************************
 Name:    Highslide JS
-Version: 4.1.2 (March 27 2009)
-Config:  default -multiple +unobtrusive
+Version: 4.1.5 (June 26 2009)
+Config:  default -multiple +unobtrusive +iframe +flash
 Author:  Torstein Hønsi
 Support: http://highslide.com/support
 
@@ -34,6 +34,20 @@ lang : {
 	fullExpandTitle : 'Expand to actual size (f)',
 	creditsText : 'Powered by <i>Highslide JS</i>',
 	creditsTitle : 'Go to the Highslide JS homepage',
+	previousText : 'Previous',
+	nextText : 'Next', 
+	moveText : 'Move',
+	closeText : 'Close', 
+	closeTitle : 'Close (esc)', 
+	resizeTitle : 'Resize',
+	playText : 'Play',
+	playTitle : 'Play slideshow (spacebar)',
+	pauseText : 'Pause',
+	pauseTitle : 'Pause slideshow (spacebar)',
+	previousTitle : 'Previous (arrow left)',
+	nextTitle : 'Next (arrow right)',
+	moveTitle : 'Move',
+	fullExpandText : '1:1',
 	restoreTitle : 'Click to close image, click and drag to move. Use arrow keys for next and previous.'
 },
 // See http://highslide.com/ref for examples of settings  
@@ -56,15 +70,44 @@ fullExpandPosition : 'bottom right',
 fullExpandOpacity : 1,
 showCredits : true, // you can set this to false if you want
 creditsHref : 'http://highslide.com/',
+creditsTarget : '_self',
 enableKeyListener : true,
 openerTagNames : ['a'], // Add more to allow slideshow indexing
 
+allowWidthReduction : false,
+allowHeightReduction : true,
+preserveContent : true, // Preserve changes made to the content and position of HTML popups.
+objectLoadTime : 'before', // Load iframes 'before' or 'after' expansion.
 dragByHeading: true,
 minWidth: 200,
 minHeight: 200,
 allowSizeReduction: true, // allow the image to reduce to fit client size. If false, this overrides minWidth and minHeight
 outlineType : 'drop-shadow', // set null to disable outlines
-wrapperClassName : 'highslide-wrapper', // for enhanced css-control
+skin : {
+	contentWrapper:
+		'<div class="highslide-header"><ul>'+
+			'<li class="highslide-previous">'+
+				'<a href="#" title="{hs.lang.previousTitle}" onclick="return hs.previous(this)">'+
+				'<span>{hs.lang.previousText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-next">'+
+				'<a href="#" title="{hs.lang.nextTitle}" onclick="return hs.next(this)">'+
+				'<span>{hs.lang.nextText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-move">'+
+				'<a href="#" title="{hs.lang.moveTitle}" onclick="return false">'+
+				'<span>{hs.lang.moveText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-close">'+
+				'<a href="#" title="{hs.lang.closeTitle}" onclick="return hs.close(this)">'+
+				'<span>{hs.lang.closeText}</span></a>'+
+			'</li>'+
+		'</ul></div>'+
+		'<div class="highslide-body"></div>'+
+		'<div class="highslide-footer"><div>'+
+			'<span class="highslide-resize" title="{hs.lang.resizeTitle}"><span></span></span>'+
+		'</div></div>'
+},
 // END OF YOUR SETTINGS
 
 
@@ -85,11 +128,21 @@ overrides : [
 	'headingText',
 	'headingEval',
 	'headingOverlay',
+	'creditsPosition',
 	'dragByHeading',
 	
 	'width',
 	'height',
 	
+	'contentId',
+	'allowWidthReduction',
+	'allowHeightReduction',
+	'preserveContent',
+	'objectType',	
+	'objectWidth',
+	'objectHeight',
+	'objectLoadTime',	
+	'swfOptions',
 	'wrapperClassName',
 	'minWidth',
 	'minHeight',
@@ -110,10 +163,13 @@ oPos : {
 mouse: {},
 headingOverlay: {},
 captionOverlay: {},
+swfOptions: { flashvars: {}, params: {}, attributes: {} },
 timers : [],
 
 pendingOutlines : {},
+sleeping : [],
 clones : {},
+onReady: [],
 uaVersion: parseFloat((navigator.userAgent.toLowerCase().match( /.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/ ) || [0,'0'])[1]),
 ie : (document.all && !window.opera),
 safari : /Safari/.test(navigator.userAgent),
@@ -197,7 +253,7 @@ getPageSize : function () {
 			(d.documentElement.clientWidth || self.innerWidth),
 		height = hs.ie ? iebody.clientHeight : self.innerHeight;
 	
-	return {
+	hs.page = {
 		width: width,
 		height: height,		
 		scrollLeft: hs.ie ? iebody.scrollLeft : pageXOffset,
@@ -221,11 +277,52 @@ getPosition : function(el)	{
 
 expand : function(a, params, custom, type) {
 	if (!a) a = hs.createElement('a', null, { display: 'none' }, hs.container);
-	if (typeof a.getParams == 'function') return params;	
+	if (typeof a.getParams == 'function') return params;
+	if (type == 'html') {
+		for (var i = 0; i < hs.sleeping.length; i++) {
+			if (hs.sleeping[i] && hs.sleeping[i].a == a) {
+				hs.sleeping[i].awake();
+				hs.sleeping[i] = null;
+				return false;
+			}
+		}
+		hs.hasHtmlExpanders = true;
+	}	
 	try {	
-		new hs.Expander(a, params, custom);
+		new hs.Expander(a, params, custom, type);
 		return false;
 	} catch (e) { return true; }
+},
+
+htmlExpand : function(a, params, custom) {
+	return hs.expand(a, params, custom, 'html');
+},
+
+getSelfRendered : function() {
+	return hs.createElement('div', { 
+		className: 'highslide-html-content', 
+		innerHTML: hs.replaceLang(hs.skin.contentWrapper) 
+	});
+},
+getElementByClass : function (el, tagName, className) {
+	var els = el.getElementsByTagName(tagName);
+	for (var i = 0; i < els.length; i++) {
+    	if ((new RegExp(className)).test(els[i].className)) {
+			return els[i];
+		}
+	}
+	return null;
+},
+replaceLang : function(s) {
+	s = s.replace(/\s/g, ' ');
+	var re = /{hs\.lang\.([^}]+)\}/g,
+		matches = s.match(re),
+		lang;
+	if (matches) for (var i = 0; i < matches.length; i++) {
+		lang = matches[i].replace(re, "$1");
+		if (typeof hs.lang[lang] != 'undefined') s = s.replace(matches[i], hs.lang[lang]);
+	}
+	return s;
 },
 
 
@@ -235,16 +332,19 @@ setClickEvents : function () {
 		var type = hs.isUnobtrusiveAnchor(els[i]);
 		if (type && !els[i].hsHasSetClick) {
 			(function(){
-					els[i].onclick =function() { return hs.expand(this) }
+				var t = type;
+					els[i].onclick =(type == 'image') ?function() { return hs.expand(this) }:
+						function() { return hs.htmlExpand(this, { objectType: t } );};
 			})();
 			els[i].hsHasSetClick = true;	
 		}
 	}
-	if (!hs.pageLoaded) setTimeout( hs.setClickEvents, 50);
-	else if (i) hs.updateAnchors();
+	hs.getAnchors();
 },
 isUnobtrusiveAnchor: function(el) {
 	if (el.rel == 'highslide') return 'image';
+	else if (el.rel == 'highslide-iframe') return 'iframe';
+	else if (el.rel == 'highslide-swf') return 'swf';
 },
 
 getParam : function (a, param) {
@@ -276,7 +376,7 @@ getNode : function (id) {
 },
 
 discardElement : function(d) {
-	hs.garbageBin.appendChild(d);
+	if (d) hs.garbageBin.appendChild(d);
 	hs.garbageBin.innerHTML = '';
 },
 transit : function (adj, exp) {
@@ -428,6 +528,10 @@ mouseClickHandler : function(e)
 			}
 			return false;
 		}
+		else if (/highslide-html/.test(el.className) && hs.focusKey != exp.key) {
+			exp.focus();
+			exp.doShowHide('hidden');
+		}
 	} else if (e.type == 'mouseup') {
 		
 		hs.removeEventListener(document, 'mousemove', hs.dragHandler);
@@ -444,6 +548,9 @@ mouseClickHandler : function(e)
 				hs.dragArgs.exp.doShowHide('hidden');
 			}
 			
+			if (hs.dragArgs.exp.releaseMask) 
+				hs.dragArgs.exp.releaseMask.style.display = 'none';
+			
 			hs.hasFocused = false;
 			hs.dragArgs = null;
 		
@@ -459,6 +566,15 @@ dragHandler : function(e)
 	if (!hs.dragArgs) return true;
 	if (!e) e = window.event;
 	var a = hs.dragArgs, exp = a.exp;
+	if (exp.iframe) {		
+		if (!exp.releaseMask) exp.releaseMask = hs.createElement('div', null, 
+			{ position: 'absolute', width: exp.x.size+'px', height: exp.y.size+'px', 
+				left: exp.x.cb+'px', top: exp.y.cb+'px', zIndex: 4,	background: (hs.ie ? 'white' : 'none'), 
+				opacity: .01 }, 
+			exp.wrapper, true);
+		if (exp.releaseMask.style.display == 'none')
+			exp.releaseMask.style.display = '';
+	}
 	
 	a.dX = e.clientX - a.clickX;
 	a.dY = e.clientY - a.clickY;	
@@ -492,14 +608,14 @@ wrapperMouseHandler : function (e) {
 		for (var i = 0; i < exp.overlays.length; i++) (function() {
 			var o = hs.$('hsId'+ exp.overlays[i]);
 			if (o && o.hideOnMouseOut) {
-				if (over) hs.setStyles(o, { visibility: 'visible' });
-				hs.animate(o, { opacity: over ? o.opacity : 0 }, o.dur, null, 
-					over ? null : function() { hs.setStyles(o, { visibility: 'hidden' })});
+				if (over) hs.setStyles(o, { visibility: 'visible', display: '' });
+				hs.animate(o, { opacity: over ? o.opacity : 0 }, o.dur);
 			}
 		})();	
 	} catch (e) {}
 },
 addEventListener : function (el, event, func) {
+	if (el == document && event == 'ready') hs.push(hs.onReady, func);
 	try {
 		el.addEventListener(event, func, false);
 	} catch (e) {
@@ -556,8 +672,9 @@ preloadImages : function (number) {
 init : function () {
 	if (!hs.container) {
 	
-		hs.page = hs.getPageSize();
+		hs.getPageSize();
 		hs.ieLt7 = hs.ie && hs.uaVersion < 7;
+		hs.ie6SSL = hs.ieLt7 && location.protocol == 'https:';
 		for (var x in hs.langDefaults) {
 			if (typeof hs[x] != 'undefined') hs.lang[x] = hs[x];
 			else if (typeof hs.lang[x] == 'undefined' && typeof hs.langDefaults[x] != 'undefined') 
@@ -590,6 +707,8 @@ init : function () {
 			}, hs.container
 		);
 		hs.garbageBin = hs.createElement('div', null, { display: 'none' }, hs.container);
+		hs.clearing = hs.createElement('div', null, 
+			{ clear: 'both', paddingTop: '1px' }, null, true);
 		
 		// http://www.robertpenner.com/easing/ 
 		Math.linearTween = function (t, b, c, d) {
@@ -604,9 +723,11 @@ init : function () {
 			|| (hs.ie && hs.uaVersion < 5.5));
 	}
 },
-domReady : function() {
-	hs.isDomReady = true;
-	if (hs.onDomReady) hs.onDomReady();
+ready : function() {
+	if (hs.isReady) return;
+	hs.isReady = true;
+	
+	for (var i = 0; i < hs.onReady.length; i++) hs.onReady[i]();
 },
 
 updateAnchors : function() {
@@ -650,8 +771,6 @@ hs.fx = function( elem, options, prop ){
 	if (!options.orig) options.orig = {};
 };
 hs.fx.prototype = {
-
-	// Simple function for setting a style value
 	update: function(){
 		(hs.fx.step[this.prop] || hs.fx.step._default)(this);
 		
@@ -659,8 +778,6 @@ hs.fx.prototype = {
 			this.options.step.call(this.elem, this.now, this);
 
 	},
-
-	// Start an animation from one number to another
 	custom: function(from, to, unit){
 		this.startTime = (new Date()).getTime();
 		this.start = from;
@@ -690,9 +807,6 @@ hs.fx.prototype = {
 			}, 13);
 		}
 	},
-
-
-	// Each step of an animation
 	step: function(gotoEnd){
 		var t = (new Date()).getTime();
 		if ( gotoEnd || t >= this.options.duration + this.startTime ) {
@@ -707,20 +821,15 @@ hs.fx.prototype = {
 				if ( this.options.curAnim[i] !== true )
 					done = false;
 
-			if ( done ) {	
-				// Execute the complete function
+			if ( done ) {
 				if (this.options.complete) this.options.complete.call(this.elem);
 			}
 			return false;
 		} else {
 			var n = t - this.startTime;
 			this.state = n / this.options.duration;
-
-			// Perform the easing function, defaults to swing
 			this.pos = this.options.easing(n, 0, 1, this.options.duration);
 			this.now = this.start + ((this.end - this.start) * this.pos);
-
-			// Perform the next step of the animation
 			this.update();
 		}
 		return true;
@@ -886,6 +995,8 @@ get : function(key) {
 			return this.size + 2 * this.cb + this.p1 + this.p2;
 		case 'fitsize':
 			return this.clientSize - this.marginMin - this.marginMax;
+		case 'maxsize':
+			return this.get('fitsize') - 2 * this.cb - this.p1 - this.p2 ;
 		case 'opos':
 			return this.pos - (this.exp.outline ? this.exp.outline.offset : 0);
 		case 'osize':
@@ -898,14 +1009,14 @@ get : function(key) {
 calcBorders: function() {
 	// correct for borders
 	this.cb = (this.exp.content['offset'+ this.ucwh] - this.t) / 2;
-	this.marginMax = hs['margin'+ this.ucrb] + 2 * this.cb;
+	this.marginMax = hs['margin'+ this.ucrb];
 },
 calcThumb: function() {
 	this.t = this.exp.el[this.wh] ? parseInt(this.exp.el[this.wh]) : 
 		this.exp.el['offset'+ this.ucwh];
 	this.tpos = this.exp.tpos[this.dim];
 	this.tb = (this.exp.el['offset'+ this.ucwh] - this.t) / 2;
-	if (this.tpos == 0) {
+	if (this.tpos < 1) {
 		this.tpos = (hs.page[this.wh] / 2) + hs.page['scroll'+ this.uclt];		
 	};
 },
@@ -940,6 +1051,16 @@ setSize: function(i) {
 	exp.content.style[this.wh] = i +'px';
 	exp.wrapper.style[this.wh] = this.get('wsize') +'px';
 	if (exp.outline) exp.outline.setPosition();
+	if (exp.releaseMask) exp.releaseMask.style[this.wh] = i +'px';
+	if (exp.isHtml) {
+		var d = exp.scrollerDiv;
+		if (this.sizeDiff === undefined)
+			this.sizeDiff = exp.innerContent['offset'+ this.ucwh] - d['offset'+ this.ucwh];
+		d.style[this.wh] = (this.size - this.sizeDiff) +'px';
+			
+		if (this.dim == 'x') exp.mediumContent.style.width = 'auto';
+		if (exp.body) exp.body.style[this.wh] = 'auto';
+	}
 	if (this.dim == 'x' && exp.overlayBox) exp.sizeOverlayBox(true);
 },
 setPos: function(i) {
@@ -952,22 +1073,22 @@ setPos: function(i) {
 };
 
 hs.Expander = function(a, params, custom, contentType) {
-	if (document.readyState && hs.ie && !hs.isDomReady) {
-		hs.onDomReady = function() {
+	if (document.readyState && hs.ie && !hs.isReady) {
+		hs.addEventListener(document, 'ready', function() {
 			new hs.Expander(a, params, custom, contentType);
-		};
+		});
 		return;
 	} 
 	this.a = a;
 	this.custom = custom;
 	this.contentType = contentType || 'image';
+	this.isHtml = (contentType == 'html');
 	this.isImage = !this.isHtml;
 	
 	hs.continuePreloading = false;
 	this.overlays = [];
 	hs.init();
 	var key = this.key = hs.expanders.length;
-	
 	// override inline parameters
 	for (var i = 0; i < hs.overrides.length; i++) {
 		var name = hs.overrides[i];
@@ -990,12 +1111,12 @@ hs.Expander = function(a, params, custom, contentType) {
 	}	
 
 	// cancel other
-	for (var i = 0; i < hs.expanders.length; i++) {
+	if (!hs.allowSimultaneousLoading) for (var i = 0; i < hs.expanders.length; i++) {
 		if (hs.expanders[i] && hs.expanders[i].thumb != el && !hs.expanders[i].onLoadStarted) {
 			hs.expanders[i].cancelLoading();
 		}
 	}
-	hs.expanders[this.key] = this;
+	hs.expanders[key] = this;
 		if (hs.expanders[key-1]) hs.expanders[key-1].close();
 		if (typeof hs.focusKey != 'undefined' && hs.expanders[hs.focusKey])
 			hs.expanders[hs.focusKey].close();
@@ -1003,7 +1124,7 @@ hs.Expander = function(a, params, custom, contentType) {
 	// initiate metrics
 	this.el = el;
 	this.tpos = hs.getPosition(el);
-	hs.page = hs.getPageSize();
+	hs.getPageSize();
 	var x = this.x = new hs.Dimension(this, 'x');
 	x.calcThumb();
 	var y = this.y = new hs.Dimension(this, 'y');
@@ -1011,11 +1132,11 @@ hs.Expander = function(a, params, custom, contentType) {
 	this.wrapper = hs.createElement(
 		'div', {
 			id: 'highslide-wrapper-'+ this.key,
-			className: this.wrapperClassName
+			className: 'highslide-wrapper '+ this.wrapperClassName
 		}, {
 			visibility: 'hidden',
 			position: 'absolute',
-			zIndex: hs.zIndexCounter++
+			zIndex: hs.zIndexCounter += 2
 		}, null, true );
 	
 	this.wrapper.onmouseover = this.wrapper.onmouseout = hs.wrapperMouseHandler;
@@ -1045,14 +1166,14 @@ hs.Expander = function(a, params, custom, contentType) {
 
 hs.Expander.prototype = {
 error : function(e) {
-	// alert ('Line '+ e.lineNumber +': '+ e.message);
+	//alert ('Line '+ e.lineNumber +': '+ e.message);
 	window.location.href = this.src;
 },
 
 connectOutline : function() {
 	var outline = this.outline = hs.pendingOutlines[this.outlineType];
 	outline.exp = this;
-	outline.table.style.zIndex = this.wrapper.style.zIndex;
+	outline.table.style.zIndex = this.wrapper.style.zIndex - 1;
 	hs.pendingOutlines[this.outlineType] = null;
 },
 
@@ -1097,6 +1218,54 @@ imageCreate : function() {
 	this.showLoading();
 },
 
+htmlCreate : function () { 
+		this.content = hs.getNode(this.contentId);
+	if (!this.content) 
+		this.content = hs.getSelfRendered();
+	
+	var innerContent = this.innerContent = this.content;
+	
+	if (/(swf|iframe)/.test(this.objectType)) this.setObjContainerSize(innerContent);
+	
+	// the content tree
+	hs.container.appendChild(this.wrapper);
+	hs.setStyles( this.wrapper, { 
+		position: 'static',
+		padding: '0 '+ hs.marginRight +'px 0 '+ hs.marginLeft +'px'
+	});
+	this.content = hs.createElement(
+    	'div', {
+    		className: 'highslide-html' 
+    	}, {
+			position: 'relative',
+			zIndex: 3,
+			overflow: 'hidden'
+		},
+		this.wrapper
+	);
+	this.mediumContent = hs.createElement('div', null, null, this.content, 1);
+	this.mediumContent.appendChild(innerContent);
+	
+	hs.setStyles (innerContent, { 
+		position: 'relative',
+		display: 'block',
+		direction: hs.lang.cssDirection || ''
+	});
+	if (this.width) innerContent.style.width = this.width +'px';
+	if (this.height) hs.setStyles(innerContent, {
+		height: this.height +'px',
+		overflow: 'hidden'
+	});
+	if (innerContent.offsetWidth < this.minWidth)
+		innerContent.style.width = this.minWidth +'px';
+    
+    if (this.objectType == 'iframe' && this.objectLoadTime == 'before') {
+		this.writeExtendedContent();
+	}
+    else
+    	this.contentLoaded();
+},
+
 contentLoaded : function() {
 	try {	
 		if (!this.content) return;
@@ -1109,7 +1278,8 @@ contentLoaded : function() {
 		if (this.loading) {
 			hs.setStyles(this.loading, { top: '-9999px' });
 			this.loading = null;
-		}	
+		}
+		if (this.isImage) {	
 			x.full = this.content.width;
 			y.full = this.content.height;
 			
@@ -1119,6 +1289,7 @@ contentLoaded : function() {
 			});
 			this.wrapper.appendChild(this.content);
 			hs.container.appendChild(this.wrapper);
+		} else if (this.htmlGetSize) this.htmlGetSize();
 		
 		x.calcBorders();
 		y.calcBorders();
@@ -1136,10 +1307,13 @@ contentLoaded : function() {
 		
 		y.calcExpanded();
 		this.justify(y);
+		if (this.isHtml) this.htmlSizeOperations();
 		if (this.overlayBox) this.sizeOverlayBox(0, 1);
 		
 		if (this.allowSizeReduction) {
+			if (this.isImage)
 				this.correctRatio(ratio);
+			else this.fitOverlayBox();
 			if (this.isImage && this.x.full > (this.x.imgSize || this.x.size)) {
 				this.createFullExpand();
 				if (this.overlays.length == 1) this.sizeOverlayBox();
@@ -1149,6 +1323,155 @@ contentLoaded : function() {
 		
 	} catch (e) {
 		this.error(e);
+	}
+},
+
+
+setObjContainerSize : function(parent, auto) {
+	var c = hs.getElementByClass(parent, 'DIV', 'highslide-body');
+	if (/(iframe|swf)/.test(this.objectType)) {
+		if (this.objectWidth) c.style.width = this.objectWidth +'px';
+		if (this.objectHeight) c.style.height = this.objectHeight +'px';
+	}
+},
+
+writeExtendedContent : function () {
+	if (this.hasExtendedContent) return;
+	var exp = this;
+	this.body = hs.getElementByClass(this.innerContent, 'DIV', 'highslide-body');
+	if (this.objectType == 'iframe') {
+		this.showLoading();
+		var ruler = hs.clearing.cloneNode(1);
+		this.body.appendChild(ruler);
+		this.newWidth = this.innerContent.offsetWidth;
+		if (!this.objectWidth) this.objectWidth = ruler.offsetWidth;
+		var hDiff = this.innerContent.offsetHeight - this.body.offsetHeight,
+			h = this.objectHeight || hs.page.height - hDiff - hs.marginTop - hs.marginBottom,
+			onload = this.objectLoadTime == 'before' ? 
+				' onload="if (hs.expanders['+ this.key +']) hs.expanders['+ this.key +'].contentLoaded()" ' : '';
+		
+		this.body.innerHTML += '<iframe name="hs'+ (new Date()).getTime() +'" frameborder="0" key="'+ this.key +'" '
+			+' allowtransparency="true" style="width:'+ this.objectWidth +'px; height:'+ h +'px" '
+			+ onload +' src="'+ this.src +'"></iframe>';
+		this.ruler = this.body.getElementsByTagName('div')[0];
+		this.iframe = this.body.getElementsByTagName('iframe')[0];
+		
+		if (this.objectLoadTime == 'after') this.correctIframeSize();
+		
+	}
+	if (this.objectType == 'swf') {
+		this.body.id = this.body.id || 'hs-flash-id-' + this.key;
+		var a = this.swfOptions;
+		if (!a.params) a.params = {};
+		if (typeof a.params.wmode == 'undefined') a.params.wmode = 'transparent';
+		if (swfobject) swfobject.embedSWF(this.src, this.body.id, this.objectWidth, this.objectHeight, 
+			a.version || '7', a.expressInstallSwfurl, a.flashvars, a.params, a.attributes);
+	}
+	this.hasExtendedContent = true;
+},
+htmlGetSize : function() {
+	if (this.iframe && !this.objectHeight) { // loadtime before		
+		this.iframe.style.height = this.body.style.height = this.getIframePageHeight() +'px';
+	}
+	this.innerContent.appendChild(hs.clearing);
+	if (!this.x.full) this.x.full = this.innerContent.offsetWidth;
+    this.y.full = this.innerContent.offsetHeight;
+    this.innerContent.removeChild(hs.clearing);
+    if (hs.ie && this.newHeight > parseInt(this.innerContent.currentStyle.height)) { // ie css bug
+		this.newHeight = parseInt(this.innerContent.currentStyle.height);
+	}
+	hs.setStyles( this.wrapper, { position: 'absolute',	padding: '0'});
+	hs.setStyles( this.content, { width: this.x.t +'px', height: this.y.t +'px'});
+},
+
+getIframePageHeight : function() {
+	var h;
+	try {
+		var doc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+		var clearing = doc.createElement('div');
+		clearing.style.clear = 'both';
+		doc.body.appendChild(clearing);
+		h = clearing.offsetTop;
+		if (hs.ie) h += parseInt(doc.body.currentStyle.marginTop) 
+			+ parseInt(doc.body.currentStyle.marginBottom) - 1;
+	} catch (e) { // other domain
+		h = 300;
+	}
+	return h;
+},
+correctIframeSize : function () {
+	var wDiff = this.innerContent.offsetWidth - this.ruler.offsetWidth;
+	hs.discardElement(this.ruler);
+	if (wDiff < 0) wDiff = 0;
+	
+	var hDiff = this.innerContent.offsetHeight - this.iframe.offsetHeight;
+	hs.setStyles(this.iframe, { 
+		width: Math.abs(this.x.size - wDiff) +'px', 
+		height: Math.abs(this.y.size - hDiff) +'px'
+	});
+    hs.setStyles(this.body, { 
+		width: this.iframe.style.width, 
+    	height: this.iframe.style.height
+	});
+    	
+    this.scrollingContent = this.iframe;
+    this.scrollerDiv = this.scrollingContent;
+},
+htmlSizeOperations : function () {
+	
+	this.setObjContainerSize(this.innerContent);
+	
+	
+	if (this.objectType == 'swf' && this.objectLoadTime == 'before') this.writeExtendedContent();	
+	
+    // handle minimum size
+    if (this.x.size < this.x.full && !this.allowWidthReduction) this.x.size = this.x.full;
+    if (this.y.size < this.y.full && !this.allowHeightReduction) this.y.size = this.y.full;
+	this.scrollerDiv = this.innerContent;
+    hs.setStyles(this.mediumContent, { 
+		position: 'relative',
+		width: this.x.size +'px'
+	});
+    hs.setStyles(this.innerContent, { 
+    	border: 'none',
+    	width: 'auto',
+    	height: 'auto'
+    });
+	var node = hs.getElementByClass(this.innerContent, 'DIV', 'highslide-body');
+    if (node && !/(iframe|swf)/.test(this.objectType)) {
+    	var cNode = node; // wrap to get true size
+    	node = hs.createElement(cNode.nodeName, null, {overflow: 'hidden'}, null, true);
+    	cNode.parentNode.insertBefore(node, cNode);
+    	node.appendChild(hs.clearing); // IE6
+    	node.appendChild(cNode);
+    	
+    	var wDiff = this.innerContent.offsetWidth - node.offsetWidth;
+    	var hDiff = this.innerContent.offsetHeight - node.offsetHeight;
+		node.removeChild(hs.clearing);
+    	
+    	var kdeBugCorr = hs.safari || navigator.vendor == 'KDE' ? 1 : 0; // KDE repainting bug
+    	hs.setStyles(node, { 
+    			width: (this.x.size - wDiff - kdeBugCorr) +'px', 
+    			height: (this.y.size - hDiff) +'px',
+    			overflow: 'auto', 
+    			position: 'relative' 
+    		} 
+    	);
+		if (kdeBugCorr && cNode.offsetHeight > node.offsetHeight)	{
+    		node.style.width = (parseInt(node.style.width) + kdeBugCorr) + 'px';
+		}
+    	this.scrollingContent = node;
+    	this.scrollerDiv = this.scrollingContent;
+	}
+    if (this.iframe && this.objectLoadTime == 'before') this.correctIframeSize();
+    if (!this.scrollingContent && this.y.size < this.mediumContent.offsetHeight) this.scrollerDiv = this.content;
+	
+	if (this.scrollerDiv == this.content && !this.allowWidthReduction && !/(iframe|swf)/.test(this.objectType)) {
+		this.x.size += 17; // room for scrollbars
+	}
+	if (this.scrollerDiv && this.scrollerDiv.offsetHeight > this.scrollerDiv.parentNode.offsetHeight) {
+		setTimeout("try { hs.expanders["+ this.key +"].scrollerDiv.style.overflow = 'auto'; } catch(e) {}",
+			 hs.expandDuration);
 	}
 },
 
@@ -1169,12 +1492,12 @@ justify : function (p, moveOnly) {
 		}
 		if (p.pos + p.get('wsize') > p.scroll + p.clientSize - p.marginMax) {
 			if (!moveOnly && hasMovedMin && allowReduce) {
-				p.size = p.get('fitsize'); // can't expand more
+				p.size = p.get(dim == 'y' ? 'fitsize' : 'maxsize');
 			} else if (p.get('wsize') < p.get('fitsize')) {
 				p.pos = p.scroll + p.clientSize - p.marginMax - p.get('wsize');
 			} else { // image larger than viewport
 				p.pos = p.scroll + p.marginMin;
-				if (!moveOnly && allowReduce) p.size = p.get('fitsize');
+				if (!moveOnly && allowReduce) p.size = p.get(dim == 'y' ? 'fitsize' : 'maxsize');
 			}			
 		}
 		
@@ -1281,7 +1604,8 @@ changeSize : function(up, to, dur) {
 	
 	if (this.outline && !this.outlineWhileAnimating) {
 		if (up) this.outline.setPosition();
-		else this.outline.destroy();
+		else this.outline.destroy(
+				(this.isHtml && this.preserveContent));
 	}
 	
 	
@@ -1307,6 +1631,12 @@ changeSize : function(up, to, dur) {
 		width: x.t +'px',
 		height: y.t +'px'
 	});
+	if (up && this.isHtml) {
+		hs.setStyles(this.wrapper, {
+			left: (x.tpos - x.cb + x.tb) +'px',
+			top: (y.tpos - y.cb + y.tb) +'px'
+		});
+	}
 	if (this.fadeInOut) {
 		hs.setStyles(this.wrapper, { opacity: up ? 0 : 1 });
 		hs.extend(to.wrapper, { opacity: up });
@@ -1325,12 +1655,19 @@ changeSize : function(up, to, dur) {
 				};
 				exp.outline.setPosition(pos, 0, 1);				
 			}
+			if (exp.isHtml) {	
+				if (args.prop == 'left') 
+					exp.mediumContent.style.left = (x.pos - val) +'px';
+				if (args.prop == 'top') 
+					exp.mediumContent.style.top = (y.pos - val) +'px';
+			}
 		}
 	});
 	hs.animate( this.content, to.content, dur, easing, after);
 	if (up) {
 		this.wrapper.style.visibility = 'visible';
 		this.content.style.visibility = 'visible';
+		if (this.isHtml) this.innerContent.style.visibility = 'visible';
 		this.a.className += ' highslide-active-anchor';
 	}
 },
@@ -1341,6 +1678,19 @@ changeSize : function(up, to, dur) {
 afterExpand : function() {
 	this.isExpanded = true;	
 	this.focus();
+	
+	if (this.isHtml && this.objectLoadTime == 'after') this.writeExtendedContent();
+	if (this.iframe) {
+		try {
+			var exp = this,
+				doc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+			hs.addEventListener(doc, 'mousedown', function () {
+				if (hs.focusKey != exp.key) exp.focus();
+			});
+		} catch(e) {}
+		if (hs.ie && typeof this.isClosing != 'boolean') // first open 
+			this.iframe.style.width = (this.objectWidth - 1) +'px'; // hasLayout
+	}
 	if (hs.upcoming && hs.upcoming == this.a) hs.upcoming = null;
 	this.prepareNextOutline();
 	var p = hs.page, mX = hs.mouse.x + p.scrollLeft, mY = hs.mouse.y + p.scrollTop;
@@ -1387,7 +1737,8 @@ getAnchorIndex : function() {
 },
 
 
-cancelLoading : function() {	
+cancelLoading : function() {
+	hs.discardElement (this.wrapper);
 	hs.expanders[this.key] = null;
 	if (this.loading) hs.loading.style.left = '-9999px';
 },
@@ -1395,13 +1746,14 @@ cancelLoading : function() {
 writeCredits : function () {
 	this.credits = hs.createElement('a', {
 		href: hs.creditsHref,
+		target: hs.creditsTarget,
 		className: 'highslide-credits',
 		innerHTML: hs.lang.creditsText,
 		title: hs.lang.creditsTitle
 	});
 	this.createOverlay({ 
 		overlayId: this.credits, 
-		position: 'top left' 
+		position: this.creditsPosition || 'top left' 
 	});
 },
 
@@ -1493,7 +1845,8 @@ showHideElements : function (tagName, visibility) {
 },
 
 focus : function() {
-	this.wrapper.style.zIndex = hs.zIndexCounter++;
+	this.wrapper.style.zIndex = hs.zIndexCounter += 2;
+	if (this.isImage) {
 		this.content.title = hs.lang.restoreTitle;
 		
 		if (hs.restoreCursor) {
@@ -1501,7 +1854,7 @@ focus : function() {
 			if (hs.ie && hs.uaVersion < 6) hs.styleRestoreCursor = 'hand';
 			this.content.style.cursor = hs.styleRestoreCursor;
 		}
-		
+	}
 	hs.focusKey = this.key;	
 	hs.addEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);	
 },
@@ -1513,7 +1866,7 @@ resize : function (e) {
 	var w, h, r = e.width / e.height;
 	w = Math.max(e.width + e.dX, Math.min(this.minWidth, this.x.full));
 	if (this.isImage && Math.abs(w - this.x.full) < 12) w = this.x.full;
-	h = w / r;
+	h = this.isHtml ? e.height + e.dY : w / r;
 	if (h < Math.min(this.minHeight, this.y.full)) {
 		h = Math.min(this.minHeight, this.y.full);
 		if (this.isImage) w = h * r;
@@ -1532,6 +1885,7 @@ close : function() {
 	hs.removeEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);
 	
 	try {
+		if (this.isHtml) this.htmlPrepareClose();
 		this.content.style.cursor = 'default';
 		this.changeSize(
 			0, {
@@ -1550,6 +1904,58 @@ close : function() {
 			}, hs.restoreDuration
 		);
 	} catch (e) { this.afterClose(); }
+},
+
+htmlPrepareClose : function() {
+	if (hs.geckoMac) { // bad redraws
+		if (!hs.mask) hs.mask = hs.createElement('div', null, 
+			{ position: 'absolute' }, hs.container);
+		hs.setStyles(hs.mask, { width: this.x.size +'px', height: this.y.size +'px', 
+			left: this.x.pos +'px', top: this.y.pos +'px', display: 'block' });			
+	}
+	if (this.objectType == 'swf') try { hs.$(this.body.id).StopPlay(); } catch (e) {}
+	
+	if (this.objectLoadTime == 'after' && !this.preserveContent) this.destroyObject();		
+	if (this.scrollerDiv && this.scrollerDiv != this.scrollingContent) 
+		this.scrollerDiv.style.overflow = 'hidden';
+},
+
+destroyObject : function () {
+	if (hs.ie && this.iframe)
+		try { this.iframe.contentWindow.document.body.innerHTML = ''; } catch (e) {}
+	if (this.objectType == 'swf') swfobject.removeSWF(this.body.id);
+	this.body.innerHTML = '';
+},
+
+sleep : function() {
+	if (this.outline) this.outline.table.style.display = 'none';
+	this.releaseMask = null;
+	this.wrapper.style.display = 'none';
+	hs.push(hs.sleeping, this);
+},
+
+awake : function() {try {
+	
+	hs.expanders[this.key] = this;
+	
+	if (hs.focusKey != this.key) {	
+		try { hs.expanders[hs.focusKey].close(); } catch (e){}
+	}
+	
+	var z = hs.zIndexCounter++, stl = { display: '', zIndex: z };
+	hs.setStyles (this.wrapper, stl);
+	this.isClosing = false;
+	
+	var o = this.outline || 0;
+	if (o) {
+		if (!this.outlineWhileAnimating) stl.visibility = 'hidden';
+		hs.setStyles (o.table, stl);		
+	}
+		
+	this.show();
+} catch (e) {}
+
+
 },
 
 createOverlay : function (o) {
@@ -1664,6 +2070,7 @@ getOverlays : function() {
 		var o = hs.overlays[i], tId = o.thumbnailId, sg = o.slideshowGroup;
 		if ((!tId && !sg) || (tId && tId == this.thumbsUserSetId)
 				|| (sg && sg === this.slideshowGroup)) {
+			if (this.isImage || (this.isHtml && o.useOnHtml))
 			this.createOverlay(o);
 		}
 	}
@@ -1682,7 +2089,8 @@ genOverlayBox : function() {
 			className: this.wrapperClassName
 		}, {
 			position : 'absolute',
-			width: (this.x.size || this.x.full) +'px',
+			width: (this.x.size || (this.useBox ? this.width : null) 
+				|| this.x.full) +'px',
 			height: (this.y.size || this.y.full) +'px',
 			visibility : 'hidden',
 			overflow : 'hidden',
@@ -1741,6 +2149,7 @@ showOverlays : function() {
 		o.style.zIndex = 4;
 		if (!o.hideOnMouseOut || this.mouseIsOver) {
 			o.style.visibility = 'visible';
+			hs.setStyles(o, { visibility: 'visible', display: '' });
 			hs.animate(o, { opacity: o.opacity }, o.dur);
 		}
 	}
@@ -1748,6 +2157,10 @@ showOverlays : function() {
 
 destroyOverlays : function() {
 	if (!this.overlays.length) return;
+	if (this.isHtml && this.preserveContent) {
+		this.overlayBox.style.top = '-9999px';
+		hs.container.appendChild(this.overlayBox);
+	} else
 	hs.discardElement(this.overlayBox);
 },
 
@@ -1793,16 +2206,22 @@ doFullExpand : function () {
 afterClose : function () {
 	this.a.className = this.a.className.replace('highslide-active-anchor', '');
 	
-	this.doShowHide('visible');
+	this.doShowHide('visible');	
+	
+	if (this.isHtml && this.preserveContent) {
+		this.sleep();
+	} else {
 		if (this.outline && this.outlineWhileAnimating) this.outline.destroy();
 	
 		hs.discardElement(this.wrapper);
+	}
+	if (hs.mask) hs.mask.style.display = 'none';
 	
 	hs.expanders[this.key] = null;
 }
 
 };
-if (document.readyState && hs.ie) {
+if (hs.ie) {
 	(function () {
 		try {
 			document.documentElement.doScroll('left');
@@ -1810,9 +2229,11 @@ if (document.readyState && hs.ie) {
 			setTimeout(arguments.callee, 50);
 			return;
 		}
-		hs.domReady();
+		hs.ready();
 	})();
 }
+hs.addEventListener(document, 'DOMContentLoaded', hs.ready);
+hs.addEventListener(window, 'load', hs.ready);
 hs.langDefaults = hs.lang;
 // history
 var HsExpander = hs.Expander;
@@ -1835,13 +2256,12 @@ hs.addEventListener(window, 'load', function() {
 	}
 });
 hs.addEventListener(window, 'resize', function() {
-	hs.page = hs.getPageSize();
+	hs.getPageSize();
 });
 hs.addEventListener(document, 'mousemove', function(e) {
 	hs.mouse = { x: e.clientX, y: e.clientY	};
 });
 hs.addEventListener(document, 'mousedown', hs.mouseClickHandler);
 hs.addEventListener(document, 'mouseup', hs.mouseClickHandler);
+hs.addEventListener(document, 'ready', hs.setClickEvents);
 hs.addEventListener(window, 'load', hs.preloadImages);
-hs.addEventListener(window, 'load', function() { hs.pageLoaded = true; });
-hs.setClickEvents();

@@ -340,61 +340,118 @@ if ( !class_exists('KPicasaGallery') )
 					$remainingWidth -= $width;
 					print "<td width='$width%'>";
 
+					$isVideo = (string) $photo->media_group->media_content[1]['medium'] == 'video' ? true : false;
+
 					$summary  = wp_specialchars( (string) $photo->summary );
 					$thumbURL = (string) $photo->media_group->media_thumbnail[$thumbIndex]['url'];
 					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
 					$thumbW   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['width'];
-					$fullURL  = (string) $photo->media_group->media_thumbnail[1]['url'];
-					$fullURL  = str_replace('/s144/', '/s800/', $fullURL);
 
-					if ( $this->picEngine == 'highslide' )
+					if ( $isVideo == true )
 					{
-						if ( strlen($summary) )
+
+						if ( $this->picEngine == 'highslide' )
 						{
-							print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' title='".str_replace("'", "&#39;", $summary)."' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-							print "<div class='kpg-summary'>$summary</div>";
-							print "<div class='highslide-caption'>$summary</div>";
+							$fullURL     = (string) $photo->media_group->media_content[1]['url'];
+							$fullURL     = urlencode( $fullURL );
+							$videoHeight = (string) $photo->media_group->media_content[0]['height'];
+							$videoWidth  = (string) $photo->media_group->media_content[0]['width'];
+
+							$onclick  = "onclick='return hs.htmlExpand(this, ";
+							$onclick .= "{ objectType: \"swf\", ";
+							$onclick .= "swfOptions: { ";
+							$onclick .= "flashvars: { file: \"&type=video&file=$fullURL&backcolor=000000&frontcolor=ffffff&lightcolor=555555&screencolor=000000&screencolor=000000&stretching=fill\", autostart: \"true\" }, ";
+							$onclick .= "version: \"8\", ";
+							$onclick .= "params:  { allowscriptaccess: \"always\", allowfullscreen: \"true\", vmode: \"transparent\" } ";
+							$onclick .= "}, ";
+							$onclick .= "width: $videoWidth, objectWidth: $videoWidth, objectHeight: $videoHeight, ";
+							$onclick .= "wrapperClassName: \"draggable-header no-footer\", ";
+							$onclick .= "allowSizeReduction: false, preserveContent: false, dimmingGeckoFix: true, ";
+							$onclick .= "maincontentText: \"You need to upgrade your Flash player\" } )'";
+
+							$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
+							$fullURL = "$baseDir/player.swf";
+
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' $onclick class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' title='".str_replace("'", "&#39;", $summary)."' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+								print "<div class='highslide-caption'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL' $onclick class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
 						}
 						else
 						{
-							print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
-						}
-					}
-					elseif ( $this->picEngine == 'lightbox' || $this->picEngine == 'slimbox2' || $this->picEngine == 'thickbox' )
-					{
-						if ( $this->picEngine == 'lightbox' )
-						{
-							$markup = "rel='lightbox[kpicasa_gallery]'";
-						}
-						elseif ( $this->picEngine == 'slimbox2' )
-						{
-							$markup = "rel='lightbox-kpicasa_gallery'";
-						}
-						elseif ( $this->picEngine == 'thickbox' )
-						{
-							$markup = "class='thickbox' rel='kpicasa_gallery'";
-						}
+							$fullURL = (string) $photo->link[1]['href'];
 
-						if ( strlen($summary) )
-						{
-							print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-							print "<div class='kpg-summary'>$summary</div>";
-						}
-						else
-						{
-							print "<a href='$fullURL' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."' target='_blank'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL' target='_blank'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
 						}
 					}
 					else
 					{
-						if ( strlen($summary) )
+						$fullURL = (string) $photo->media_group->media_thumbnail[1]['url'];
+						$fullURL = str_replace('/s144/', '/s800/', $fullURL);
+
+						if ( $this->picEngine == 'highslide' )
 						{
-							print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-							print "<div class='kpg-summary'>$summary</div>";
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' title='".str_replace("'", "&#39;", $summary)."' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+								print "<div class='highslide-caption'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
+						}
+						elseif ( $this->picEngine == 'lightbox' || $this->picEngine == 'slimbox2' || $this->picEngine == 'thickbox' )
+						{
+							if ( $this->picEngine == 'lightbox' )
+							{
+								$markup = "rel='lightbox[kpicasa_gallery]'";
+							}
+							elseif ( $this->picEngine == 'slimbox2' )
+							{
+								$markup = "rel='lightbox-kpicasa_gallery'";
+							}
+							elseif ( $this->picEngine == 'thickbox' )
+							{
+								$markup = "class='thickbox' rel='kpicasa_gallery'";
+							}
+
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
 						}
 						else
 						{
-							print "<a href='$fullURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
 						}
 					}
 					print '</td>';

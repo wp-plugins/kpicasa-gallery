@@ -1,8 +1,8 @@
 === kPicasa Gallery ===
 Tags: picasa, gallery, photo
 Requires at least: 2.2
-Tested up to: 2.7.1
-Stable tag: trunk
+Tested up to: 2.8.4
+Stable tag: 0.2.0
 
 Display your Picasa Web Galleries in a post or in a page.
 
@@ -17,8 +17,11 @@ Picasa Web Gallery server.
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache
 mechanism.
 
-You have to choice of using either Lightbox or Highslide for displaying the
-large version of your photos.
+You have to choice of using either Highslide, Lightbox, Slimbox or Thickbox for
+displaying the large version of your photos.
+
+Highslide supports playing videos directly from your site. Selecting another
+engine will open a new window to the original Picasa URL.
 
 == Installation ==
 

@@ -99,7 +99,6 @@ a.highslide-credits:hover i {
 
 .highslide-viewport {
 	display: none;
-	visibility: hidden;
 	position: fixed;
 	width: 100%;
 	height: 100%;
@@ -127,8 +126,55 @@ a.highslide-credits:hover i {
 }
 
 /*****************************************************************************/
-/* Controls for the galleries.											   */
-/* Remove these if you are not using a gallery							   */
+/* Thumbnail boxes for the galleries.                                        */
+/* Remove these if you are not using a gallery.                              */
+/*****************************************************************************/
+.highslide-gallery ul {
+	list-style-type: none;
+	margin: 0;
+	padding: 0;
+}
+.highslide-gallery ul li {
+	display: block;
+	position: relative;
+	float: left;
+	width: 106px;
+	height: 106px;
+	border: 1px solid silver;
+	background: #ededed;
+	margin: 2px;
+	line-height: 0;
+	overflow: hidden;
+}
+.highslide-gallery ul a {
+	position: absolute;
+	top: 50%;
+	left: 50%;
+}
+.highslide-gallery ul img {
+ 	position: relative;
+	top: -50%;
+	left: -50%;
+}
+html>/**/body .highslide-gallery ul li {
+	display: table;
+	text-align: center;
+}
+html>/**/body .highslide-gallery ul li {
+	text-align: center;
+}
+html>/**/body .highslide-gallery ul a {
+	position: static;
+	display: table-cell;
+	vertical-align: middle;
+}
+html>/**/body .highslide-gallery ul img {
+	position: static;
+}
+
+/*****************************************************************************/
+/* Controls for the galleries.											     */
+/* Remove these if you are not using a gallery							     */
 /*****************************************************************************/
 .highslide-controls {
 	width: 195px;
@@ -320,8 +366,9 @@ a.highslide-credits:hover i {
 	display: none;
 }
 .draggable-header .highslide-header .highslide-close {
-	position: relative;
-	float: right;
+	position: absolute;
+	right: 2px;
+	top: 2px;
 	z-index: 2;
 	padding: 0;
 }
@@ -696,7 +743,7 @@ a.highslide-credits:hover i {
 }
 .highslide-thumbstrip-horizontal div {
 	width: auto;
-	/* width: 100% broke in small strips in IE */
+	/* width: 100% breaks in small strips in IE */
 }
 .highslide-thumbstrip-horizontal .highslide-scroll-up {
 	display: none;
@@ -785,6 +832,9 @@ a.highslide-credits:hover i {
 .highslide-thumbstrip-vertical table {
 	margin: 10px 0 0 10px;
 }
+.highslide-thumbstrip-vertical img {
+	max-width: 60px;
+}
 .highslide-thumbstrip-vertical .highslide-marker {
 	left: 0;
 	margin-top: 8px;
@@ -813,6 +863,7 @@ a.highslide-credits:hover i {
 .highslide-thumbstrip-float img {
 	display: inline;
 	border-color: silver;
+	max-height: 56px;
 }
 .highslide-thumbstrip-float .highslide-active-anchor img {
 	border-color: black;

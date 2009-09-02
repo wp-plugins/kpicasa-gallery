@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.1.9
+Version: 0.2.0
 Author: Guillaume Hébert
 Author URI: http://www.boloxe.com/techblog/
 
@@ -51,6 +51,9 @@ Version History
 						Also fixed a bug where a selecting anything but a 144px
 						picture thumbnail would make a picture of the wrong size
 						appear in the javascript popup
+2009-09-01	0.2.0		Added video support. Integrated with Highslide. Other
+						engines are opening a new window to the Picasa
+						original URL
 
 TODO
 ---------------------------------------------------------------------------
@@ -146,6 +149,8 @@ function initKPicasaGallery()
 		print "<!--[if lt IE 7]>\n";
 		print "<link rel='stylesheet' type='text/css' href='$picEngineDir/highslide-styles-ie6.css' />\n";
 		print "<![endif]-->\n";
+
+		print "<script type='text/javascript' src='$baseDir/swfobject.js'></script>\n";
 
 		print "<script type='text/javascript'>\n";
 		print "	hs.graphicsDir      = '$picEngineDir/graphics/';\n";
