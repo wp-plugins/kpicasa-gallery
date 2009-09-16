@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.2.0
+Version: 0.2.1
 Author: Guillaume Hébert
 
 Version History
@@ -53,6 +53,8 @@ Version History
 2009-09-01	0.2.0		Added video support. Integrated with Highslide. Other
 						engines are opening a new window to the Picasa
 						original URL
+2009-09-16	0.2.1		Maintenance release. Fixed a CSS annoyance. Now using
+						WP_PLUGIN_URL if it's defined (WP 2.6+)
 
 TODO
 ---------------------------------------------------------------------------
@@ -84,9 +86,16 @@ if ( version_compare(PHP_VERSION, '5.0.0', '<') )
 	print 'kPicasa Gallery requires PHP version 5 or greater. You are running PHP version '.PHP_VERSION;
 	exit;
 }
-if ( !defined(KPICASA_GALLERY_DIR) )
+if ( !defined('KPICASA_GALLERY_DIR') )
 {
-	define('KPICASA_GALLERY_DIR', '/wp-content/plugins/'.dirname(plugin_basename(__FILE__)));
+	if ( defined('WP_PLUGIN_URL') )
+	{
+		define('KPICASA_GALLERY_DIR', WP_PLUGIN_URL.'/'.dirname(plugin_basename(__FILE__)));
+	}
+	else
+	{
+		define('KPICASA_GALLERY_DIR', get_bloginfo('wpurl').'/wp-content/plugins/'.dirname(plugin_basename(__FILE__)));
+	}
 }
 
 $kpg_picEngine = get_option( 'kpg_picEngine' );
@@ -136,20 +145,19 @@ if ( function_exists('is_admin') )
 function initKPicasaGallery()
 {
 	global $kpg_picEngine;
-	$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
 
-	print "<link rel='stylesheet' href='$baseDir/kpicasa_gallery.css' type='text/css' media='screen' />\n";
+	print "<link rel='stylesheet' href='".KPICASA_GALLERY_DIR."/kpicasa_gallery.css' type='text/css' media='screen' />\n";
 
 	if ( $kpg_picEngine == 'highslide' )
 	{
-		$picEngineDir = "$baseDir/highslide";
+		$picEngineDir = KPICASA_GALLERY_DIR.'/highslide';
 		print "<link rel='stylesheet' href='$picEngineDir/highslide.css' type='text/css' media='screen' />\n";
 		print "<link rel='stylesheet' href='$picEngineDir/kpicasa.css' type='text/css' media='screen' />\n";
 		print "<!--[if lt IE 7]>\n";
 		print "<link rel='stylesheet' type='text/css' href='$picEngineDir/highslide-styles-ie6.css' />\n";
 		print "<![endif]-->\n";
 
-		print "<script type='text/javascript' src='$baseDir/swfobject.js'></script>\n";
+		print "<script type='text/javascript' src='".KPICASA_GALLERY_DIR."/swfobject.js'></script>\n";
 
 		print "<script type='text/javascript'>\n";
 		print "	hs.graphicsDir      = '$picEngineDir/graphics/';\n";
@@ -163,7 +171,7 @@ function initKPicasaGallery()
 	}
 	elseif ( $kpg_picEngine == 'lightbox' )
 	{
-		$picEngineDir = "$baseDir/lightbox2";
+		$picEngineDir = KPICASA_GALLERY_DIR.'/lightbox2';
 		print "<link rel='stylesheet' href='$picEngineDir/css/lightbox.css' type='text/css' media='screen' />\n";
 
 		print "<script type='text/javascript'>\n";
@@ -173,12 +181,12 @@ function initKPicasaGallery()
 	}
 	elseif ( $kpg_picEngine == 'slimbox2' )
 	{
-		$picEngineDir = "$baseDir/slimbox2";
+		$picEngineDir = KPICASA_GALLERY_DIR.'/slimbox2';
 		print "<link rel='stylesheet' href='$picEngineDir/css/slimbox2.css' type='text/css' media='screen' />\n";
 	}
 	elseif ( $kpg_picEngine == 'thickbox' )
 	{
-		$picEngineDir = "$baseDir/thickbox";
+		$picEngineDir = KPICASA_GALLERY_DIR.'/thickbox';
 		$picEngineDir = "http://www.boloxe.com/blog/wp-includes/js/thickbox";
 		print "<link rel='stylesheet' href='$picEngineDir/thickbox.css' type='text/css' media='screen' />\n";
 	}

@@ -92,7 +92,7 @@ table#kpg-pictures td div.kpg-summary {
 
 /* the picture thumbnail */
 table#kpg-pictures td img.kpg-thumb {
-	border: solid 1px black !important;
+	border: solid 1px black;
 }
 
 /********************************************

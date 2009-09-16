@@ -369,8 +369,7 @@ if ( !class_exists('KPicasaGallery') )
 							$onclick .= "allowSizeReduction: false, preserveContent: false, dimmingGeckoFix: true, ";
 							$onclick .= "maincontentText: \"You need to upgrade your Flash player\" } )'";
 
-							$baseDir = get_bloginfo('wpurl').KPICASA_GALLERY_DIR;
-							$fullURL = "$baseDir/player.swf";
+							$fullURL = KPICASA_GALLERY_DIR.'/player.swf';
 
 							if ( strlen($summary) )
 							{
