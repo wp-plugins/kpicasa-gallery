@@ -58,3 +58,10 @@ Then you will have to use the following syntax:
 `KPICASA_GALLERY(TripToEurope#Gv1sRgCILA9ebdxLyZaQ)`
 
 **Please note that this feature only works for single albums.**
+
+== FAQ ==
+
+**The "« Back to album list" links are not working properly**
+Most people who reported this issue were also using the [Google Analytics plugin
+by Yoast](http://yoast.com/wordpress/google-analytics/). I tried to contact them
+about this, but they never replied.
