@@ -62,6 +62,6 @@ Then you will have to use the following syntax:
 == FAQ ==
 
 **The "« Back to album list" links are not working properly**
-Most people who reported this issue were also using the [Google Analytics plugin
-by Yoast](http://yoast.com/wordpress/google-analytics/). I tried to contact them
-about this, but they never replied.
+Most people who reported this issue were also using the [Google Analytics for
+WordPress](http://wordpress.org/extend/plugins/google-analytics-for-wordpress/)
+plugin. I tried to contact the author about this, but never got an answer.
