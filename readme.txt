@@ -33,7 +33,7 @@ engine will open a new window to the original Picasa URL.
 
 == Advanced usage ==
 
-== Show a single ablum ==
+= Show a single ablum =
 Optionally, you can decide to only display specific albums. For this, you
 will have to go to the Picasa Web Albums and log into your account. You will
 then need to find the internal album name, as explained below.
@@ -46,7 +46,7 @@ find the internal album name for every album you want to display.
 You will then need to call kPicasa Gallery like this (this will show 3 specific albums):
 `KPICASA_GALLERY(TripToEurope, TripToAsia, TripToAustralia)`
 
-== Show a single private album ==
+= Show a single private album =
 You can also list a private album. For this, you will need its `authkey`.
 You will find it in the URL of your private album on the Picasa Web Albums website.
 
@@ -59,9 +59,9 @@ Then you will have to use the following syntax:
 
 **Please note that this feature only works for single albums.**
 
-== FAQ ==
+== Frequently Asked Questions ==
 
-**The "« Back to album list" links are not working properly**
+= The "« Back to album list" links are not working properly =
 Most people who reported this issue were also using the [Google Analytics for
 WordPress](http://wordpress.org/extend/plugins/google-analytics-for-wordpress/)
 plugin. I tried to contact the author about this, but never got an answer.
