@@ -43,7 +43,6 @@ The internal album name is the last portion (`TripToEurope`). You will need to
 find the internal album name for every album you want to display.
 
 You will then need to call kPicasa Gallery like this (this will show 3 specific albums):
-
 `KPICASA_GALLERY(TripToEurope, TripToAsia, TripToAustralia)`
 
 = Show a private album =
@@ -56,13 +55,11 @@ The `authkey` is the last portion of the URL and is always 20 characters long.
 Be careful not to include the # character that sometimes appear at the end of that URL.
 
 You would have to use the following syntax:
-
 `KPICASA_GALLERY(TripToEurope#Gv1sRgCILA9ebdxLyZaQ)`
 
 = Show albums from an alternative Picasa account =
 If you have more than one Picasa account, you can show the albums from another
 account by calling kPicasa Gallery like this:
-
 `KPICASA_GALLERY(username:YourOtherUsername)`
 
 **Please note that you can't combine multiple accounts into the same post or page.**
