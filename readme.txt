@@ -28,7 +28,7 @@ engine will open a new window to the original Picasa URL.
 1. Unzip the archive to your `wp-content/plugins/` folder.
 2. Activate the plugin through the `Plugins` menu in WordPress
 3. Go in the `Options` menu, select `kPicasa Gallery` and set your parameters.
-4. Create post or a page with `KPICASA_GALLERY` as the only content.
+4. Create post or a page and type `KPICASA_GALLERY` **on its own line**.
 5. Browse to that post or page, voilà!
 
 == Advanced usage ==
