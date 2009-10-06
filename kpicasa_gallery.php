@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.2.1
+Version: 0.2.2
 Author: Guillaume Hébert
 
 Version History
@@ -55,16 +55,14 @@ Version History
 						original URL
 2009-09-16	0.2.1		Maintenance release. Fixed a CSS annoyance. Now using
 						WP_PLUGIN_URL if it's defined (WP 2.6+)
-
-TODO
----------------------------------------------------------------------------
-- Find out more about the following format:
-  http://groups.google.com/group/Google-Picasa-Data-API/browse_thread/thread/22ba3936e4edbacf#msg_d2c3e29af488a09b
-
+2009-10-06	0.2.2		In an attempt to resolve a conflict with the "Google
+						Analytics for WordPress" plugin, kPicasa is now loaded
+						earlier (priority 9 instead of 10). Added dirname()
+						to the kpg.class.php require_once() call.
 
 Licence
 ---------------------------------------------------------------------------
-    Copyright 2007, 2008  Guillaume Hébert  (email : kag@boloxe.com)
+    Copyright 2007, 2008, 2009  Guillaume Hébert  (email : kag@boloxe.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -97,6 +95,10 @@ if ( !defined('KPICASA_GALLERY_DIR') )
 		define('KPICASA_GALLERY_DIR', get_bloginfo('wpurl').'/wp-content/plugins/'.dirname(plugin_basename(__FILE__)));
 	}
 }
+if ( !defined('KPICASA_GALLERY_FILTER_PRIORITY') )
+{
+	define('KPICASA_GALLERY_FILTER_PRIORITY', 9);
+}
 
 $kpg_picEngine = get_option( 'kpg_picEngine' );
 
@@ -110,7 +112,7 @@ if ( function_exists('is_admin') )
 		}
 		if ( function_exists('add_filter') )
 		{
-			add_filter('the_content', 'loadKPicasaGallery');
+			add_filter('the_content', 'loadKPicasaGallery', KPICASA_GALLERY_FILTER_PRIORITY);
 		}
 
 		if ( function_exists('wp_enqueue_script') )
@@ -223,7 +225,7 @@ function loadKPicasaGallery ( $content = '' )
 			}
 		}
 
-		require_once('kpg.class.php');
+		require_once(dirname(__FILE__).'/kpg.class.php');
 
 		ob_start();
 		$gallery = new KPicasaGallery($username, $showOnlyAlbums);

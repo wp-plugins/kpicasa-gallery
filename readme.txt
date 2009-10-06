@@ -63,11 +63,3 @@ account by calling kPicasa Gallery like this:
 `KPICASA_GALLERY(username:YourOtherUsername)`
 
 **Please note that you can't combine multiple accounts into the same post or page.**
-
-== Frequently Asked Questions ==
-
-= The "« Back to album list" links are not working properly =
-Most people who reported this issue were also using the [Google Analytics for
-WordPress](http://wordpress.org/extend/plugins/google-analytics-for-wordpress/)
-plugin. I tried to contact the author about this, but never got an answer. I'm
-working on a fix in the next version.
