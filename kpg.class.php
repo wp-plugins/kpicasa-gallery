@@ -65,19 +65,19 @@ if ( !class_exists('KPicasaGallery') )
 			{
 				$this->nbPhotosPerRow = 2;
 			}
-			if ( $this->albumSummary === null )
+			if ( $this->albumSummary === false )
 			{
 				$this->albumSummary = 1;
 			}
-			if ( $this->albumLocation === null )
+			if ( $this->albumLocation === false )
 			{
 				$this->albumLocation = 1;
 			}
-			if ( $this->albumPublished === null )
+			if ( $this->albumPublished === false )
 			{
 				$this->albumPublished = 1;
 			}
-			if ( $this->albumNbPhoto === null )
+			if ( $this->albumNbPhoto === false )
 			{
 				$this->albumNbPhoto = 1;
 			}
