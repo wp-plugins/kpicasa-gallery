@@ -1,7 +1,7 @@
 /******************************************************************************
 Name:    Highslide JS
-Version: 4.1.5 (June 26 2009)
-Config:  default -multiple +unobtrusive +iframe +flash
+Version: 4.1.8 (October 27 2009)
+Config:  default +events +unobtrusive +imagemap +slideshow +positioning +transitions +viewport +thumbstrip +inline +ajax +iframe +flash
 Author:  Torstein Hønsi
 Support: http://highslide.com/support
 
@@ -25,12 +25,13 @@ Under the following conditions:
 
 Your fair use and other rights are in no way affected by the above.
 ******************************************************************************/
-var hs = {
+if (!hs) { var hs = {
 // Language strings
 lang : {
 	cssDirection: 'ltr',
 	loadingText : 'Loading...',
 	loadingTitle : 'Click to cancel',
+	focusTitle : 'Click to bring to front',
 	fullExpandTitle : 'Expand to actual size (f)',
 	creditsText : 'Powered by <i>Highslide JS</i>',
 	creditsTitle : 'Go to the Highslide JS homepage',
@@ -48,6 +49,7 @@ lang : {
 	nextTitle : 'Next (arrow right)',
 	moveTitle : 'Move',
 	fullExpandText : '1:1',
+	number: 'Image %1 of %2',
 	restoreTitle : 'Click to close image, click and drag to move. Use arrow keys for next and previous.'
 },
 // See http://highslide.com/ref for examples of settings  
@@ -62,6 +64,7 @@ marginTop : 15,
 marginBottom : 15,
 zIndexCounter : 1001, // adjust to other absolutely positioned elements
 loadingOpacity : 0.75,
+allowMultipleInstances: true,
 numberOfImagesToPreload : 5,
 outlineWhileAnimating : 2, // 0 = never, 1 = always, 2 = HTML only 
 outlineStartOffset : 3, // ends at 10
@@ -72,18 +75,59 @@ showCredits : true, // you can set this to false if you want
 creditsHref : 'http://highslide.com/',
 creditsTarget : '_self',
 enableKeyListener : true,
-openerTagNames : ['a'], // Add more to allow slideshow indexing
+openerTagNames : ['a', 'area'], // Add more to allow slideshow indexing
+transitions : [],
+transitionDuration: 250,
+dimmingOpacity: 0, // Lightbox style dimming background
+dimmingDuration: 50, // 0 for instant dimming
 
 allowWidthReduction : false,
 allowHeightReduction : true,
 preserveContent : true, // Preserve changes made to the content and position of HTML popups.
 objectLoadTime : 'before', // Load iframes 'before' or 'after' expansion.
+cacheAjax : true, // Cache ajax popups for instant display. Can be overridden for each popup.
+anchor : 'auto', // where the image expands from
+align : 'auto', // position in the client (overrides anchor)
+targetX: null, // the id of a target element
+targetY: null,
 dragByHeading: true,
 minWidth: 200,
 minHeight: 200,
 allowSizeReduction: true, // allow the image to reduce to fit client size. If false, this overrides minWidth and minHeight
 outlineType : 'drop-shadow', // set null to disable outlines
 skin : {
+	controls:
+		'<div class="highslide-controls"><ul>'+
+			'<li class="highslide-previous">'+
+				'<a href="#" title="{hs.lang.previousTitle}">'+
+				'<span>{hs.lang.previousText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-play">'+
+				'<a href="#" title="{hs.lang.playTitle}">'+
+				'<span>{hs.lang.playText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-pause">'+
+				'<a href="#" title="{hs.lang.pauseTitle}">'+
+				'<span>{hs.lang.pauseText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-next">'+
+				'<a href="#" title="{hs.lang.nextTitle}">'+
+				'<span>{hs.lang.nextText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-move">'+
+				'<a href="#" title="{hs.lang.moveTitle}">'+
+				'<span>{hs.lang.moveText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-full-expand">'+
+				'<a href="#" title="{hs.lang.fullExpandTitle}">'+
+				'<span>{hs.lang.fullExpandText}</span></a>'+
+			'</li>'+
+			'<li class="highslide-close">'+
+				'<a href="#" title="{hs.lang.closeTitle}" >'+
+				'<span>{hs.lang.closeText}</span></a>'+
+			'</li>'+
+		'</ul></div>'
+	,
 	contentWrapper:
 		'<div class="highslide-header"><ul>'+
 			'<li class="highslide-previous">'+
@@ -118,6 +162,10 @@ expanders : [],
 overrides : [
 	'allowSizeReduction',
 	'useBox',
+	'anchor',
+	'align',
+	'targetX',
+	'targetY',
 	'outlineType',
 	'outlineWhileAnimating',
 	'captionId',
@@ -130,6 +178,10 @@ overrides : [
 	'headingOverlay',
 	'creditsPosition',
 	'dragByHeading',
+	'autoplay',
+	'numberPosition',
+	'transitions',
+	'dimmingOpacity',
 	
 	'width',
 	'height',
@@ -138,7 +190,11 @@ overrides : [
 	'allowWidthReduction',
 	'allowHeightReduction',
 	'preserveContent',
+	'maincontentId',
+	'maincontentText',
+	'maincontentEval',
 	'objectType',	
+	'cacheAjax',	
 	'objectWidth',
 	'objectHeight',
 	'objectLoadTime',	
@@ -166,11 +222,17 @@ captionOverlay: {},
 swfOptions: { flashvars: {}, params: {}, attributes: {} },
 timers : [],
 
+slideshows : [],
+
 pendingOutlines : {},
 sleeping : [],
+preloadTheseAjax : [],
+cacheBindings : [],
+cachedGets : {},
 clones : {},
 onReady: [],
-uaVersion: parseFloat((navigator.userAgent.toLowerCase().match( /.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/ ) || [0,'0'])[1]),
+uaVersion: /Trident\/4\.0/.test(navigator.userAgent) ? 8 :
+	parseFloat((navigator.userAgent.toLowerCase().match( /.+(?:rv|it|ra|ie)[\/: ]([\d.]+)/ ) || [0,'0'])[1]),
 ie : (document.all && !window.opera),
 safari : /Safari/.test(navigator.userAgent),
 geckoMac : /Macintosh.+rv:1\.[0-8].+Gecko/.test(navigator.userAgent),
@@ -262,6 +324,16 @@ getPageSize : function () {
 },
 
 getPosition : function(el)	{
+	if (/area/i.test(el.tagName)) {
+		var imgs = document.getElementsByTagName('img');
+		for (var i = 0; i < imgs.length; i++) {
+			var u = imgs[i].useMap;
+			if (u && u.replace(/^.*?#/, '') == el.parentNode.name) {
+				el = imgs[i];
+				break;
+			}
+		}
+	}
 	var p = { x: el.offsetLeft, y: el.offsetTop };
 	while (el.offsetParent)	{
 		el = el.offsetParent;
@@ -333,8 +405,10 @@ setClickEvents : function () {
 		if (type && !els[i].hsHasSetClick) {
 			(function(){
 				var t = type;
+				if (hs.fireEvent(hs, 'onSetClickEvent', { element: els[i], type: t })) {
 					els[i].onclick =(type == 'image') ?function() { return hs.expand(this) }:
 						function() { return hs.htmlExpand(this, { objectType: t } );};
+				}
 			})();
 			els[i].hsHasSetClick = true;	
 		}
@@ -343,8 +417,65 @@ setClickEvents : function () {
 },
 isUnobtrusiveAnchor: function(el) {
 	if (el.rel == 'highslide') return 'image';
+	else if (el.rel == 'highslide-ajax') return 'ajax';
 	else if (el.rel == 'highslide-iframe') return 'iframe';
 	else if (el.rel == 'highslide-swf') return 'swf';
+},
+
+getCacheBinding : function (a) {
+	for (var i = 0; i < hs.cacheBindings.length; i++) {
+		if (hs.cacheBindings[i][0] == a) {
+			var c = hs.cacheBindings[i][1];
+			hs.cacheBindings[i][1] = c.cloneNode(1);
+			return c;
+		}
+	}
+	return null;
+},
+
+preloadAjax : function (e) {
+	var arr = hs.getAnchors();
+	for (var i = 0; i < arr.htmls.length; i++) {
+		var a = arr.htmls[i];
+		if (hs.getParam(a, 'objectType') == 'ajax' && hs.getParam(a, 'cacheAjax'))
+			hs.push(hs.preloadTheseAjax, a);
+	}
+	
+	hs.preloadAjaxElement(0);
+},
+
+preloadAjaxElement : function (i) {
+	if (!hs.preloadTheseAjax[i]) return;
+	var a = hs.preloadTheseAjax[i];
+	var cache = hs.getNode(hs.getParam(a, 'contentId'));
+	if (!cache) cache = hs.getSelfRendered();
+	var ajax = new hs.Ajax(a, cache, 1);	
+   	ajax.onError = function () { };
+   	ajax.onLoad = function () {
+   		hs.push(hs.cacheBindings, [a, cache]);
+   		hs.preloadAjaxElement(i + 1);
+   	};
+   	ajax.run();
+},
+
+focusTopmost : function() {
+	var topZ = 0, 
+		topmostKey = -1,
+		expanders = hs.expanders,
+		exp,
+		zIndex;
+	for (var i = 0; i < expanders.length; i++) {
+		exp = expanders[i];
+		if (exp) {
+			zIndex = exp.wrapper.style.zIndex;
+			if (zIndex && zIndex > topZ) {
+				topZ = zIndex;				
+				topmostKey = i;
+			}
+		}
+	}
+	if (topmostKey == -1) hs.focusKey = -1;
+	else expanders[topmostKey].focus();
 },
 
 getParam : function (a, param) {
@@ -379,6 +510,47 @@ discardElement : function(d) {
 	if (d) hs.garbageBin.appendChild(d);
 	hs.garbageBin.innerHTML = '';
 },
+dim : function(exp) {
+	if (!hs.dimmer) {
+		hs.dimmer = hs.createElement ('div', {
+				className: 'highslide-dimming highslide-viewport-size',
+				owner: '',
+				onclick: function() {
+					if (hs.fireEvent(hs, 'onDimmerClick'))
+					
+						hs.close();
+				}
+			}, {
+                visibility: 'visible',
+				opacity: 0
+			}, hs.container, true);
+	}
+
+	hs.dimmer.style.display = '';
+
+	hs.dimmer.owner += '|'+ exp.key;
+	if (hs.geckoMac && hs.dimmingGeckoFix)
+		hs.setStyles(hs.dimmer, {
+			background: 'url('+ hs.graphicsDir + 'geckodimmer.png)',
+			opacity: 1
+		});
+	else
+		hs.animate(hs.dimmer, { opacity: exp.dimmingOpacity }, hs.dimmingDuration);
+},
+undim : function(key) {
+	if (!hs.dimmer) return;
+	if (typeof key != 'undefined') hs.dimmer.owner = hs.dimmer.owner.replace('|'+ key, '');
+
+	if (
+		(typeof key != 'undefined' && hs.dimmer.owner != '')
+		|| (hs.upcoming && hs.getParam(hs.upcoming, 'dimmingOpacity'))
+	) return;
+
+	if (hs.geckoMac && hs.dimmingGeckoFix) hs.dimmer.style.display = 'none';
+	else hs.animate(hs.dimmer, { opacity: 0 }, hs.dimmingDuration, null, function() {
+		hs.dimmer.style.display = 'none';
+	});
+},
 transit : function (adj, exp) {
 	var last = exp = exp || hs.getExpander();
 	if (hs.upcoming) return false;
@@ -390,6 +562,7 @@ transit : function (adj, exp) {
 		hs.last = hs.upcoming = null;
 	}
 	try {
+		if (!adj || exp.transitions[1] != 'crossfade')
 		exp.close();
 	} catch (e) {}
 	return false;
@@ -397,10 +570,8 @@ transit : function (adj, exp) {
 
 previousOrNext : function (el, op) {
 	var exp = hs.getExpander(el);
-	if (exp) {
-		adj = exp.getAdjacentAnchor(op);
-		return hs.transit(adj, exp);
-	} else return false;
+	if (exp) return hs.transit(exp.getAdjacentAnchor(op), exp);
+	else return false;
 },
 
 previous : function (el) {
@@ -415,6 +586,7 @@ keyHandler : function(e) {
 	if (!e) e = window.event;
 	if (!e.target) e.target = e.srcElement; // ie
 	if (typeof e.target.form != 'undefined') return true; // form element has focus
+	if (!hs.fireEvent(hs, 'onKeyDown', e)) return true;
 	var exp = hs.getExpander();
 	
 	var op = null;
@@ -423,6 +595,8 @@ keyHandler : function(e) {
 			if (exp) exp.doFullExpand();
 			return true;
 		case 32: // Space
+			op = 2;
+			break;
 		case 34: // Page Down
 		case 39: // Arrow right
 		case 40: // Arrow down
@@ -438,7 +612,7 @@ keyHandler : function(e) {
 		case 13: // Enter
 			op = 0;
 	}
-	if (op !== null) {hs.removeEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);
+	if (op !== null) {if (op != 2)hs.removeEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);
 		if (!hs.enableKeyListener) return true;
 		
 		if (e.preventDefault) e.preventDefault();
@@ -446,7 +620,10 @@ keyHandler : function(e) {
     	if (exp) {
 			if (op == 0) {
 				exp.close();
+			} else if (op == 2) {
+				if (exp.slideshow) exp.slideshow.hitSpace();
 			} else {
+				if (exp.slideshow) exp.slideshow.pause();
 				hs.previousOrNext(exp.key, op);
 			}
 			return false;
@@ -461,11 +638,26 @@ registerOverlay : function (overlay) {
 },
 
 
+addSlideshow : function (options) {
+	var sg = options.slideshowGroup;
+	if (typeof sg == 'object') {
+		for (var i = 0; i < sg.length; i++) {
+			var o = {};
+			for (var x in options) o[x] = options[x];
+			o.slideshowGroup = sg[i];
+			hs.push(hs.slideshows, o);
+		}
+	} else {
+		hs.push(hs.slideshows, options);
+	}
+},
+
 getWrapperKey : function (element, expOnly) {
 	var el, re = /^highslide-wrapper-([0-9]+)$/;
 	// 1. look in open expanders
 	el = element;
 	while (el.parentNode)	{
+		if (el.hsKey !== undefined) return el.hsKey;
 		if (el.id && re.test(el.id)) return el.id.replace(re, "$1");
 		el = el.parentNode;
 	}
@@ -496,6 +688,14 @@ isHsAnchor : function (a) {
 	return (a.onclick && a.onclick.toString().replace(/\s/g, ' ').match(/hs.(htmlE|e)xpand/));
 },
 
+reOrder : function () {
+	for (var i = 0; i < hs.expanders.length; i++)
+		if (hs.expanders[i] && hs.expanders[i].isExpanded) hs.focusTopmost();
+},
+fireEvent : function (obj, evt, args) {
+	return obj && obj[evt] ? (obj[evt](obj, args) !== false) : true;
+},
+
 mouseClickHandler : function(e) 
 {	
 	if (!e) e = window.event;
@@ -515,8 +715,16 @@ mouseClickHandler : function(e)
 		if (e.target.form) return true;
 		var match = el.className.match(/highslide-(image|move|resize)/);
 		if (match) {
-			hs.dragArgs = { exp: exp , type: match[1], left: exp.x.pos, width: exp.x.size, top: exp.y.pos, 
-				height: exp.y.size, clickX: e.clientX, clickY: e.clientY };
+			hs.dragArgs = { 
+				exp: exp , 
+				type: match[1], 
+				left: exp.x.pos, 
+				width: exp.x.size, 
+				top: exp.y.pos, 
+				height: exp.y.size, 
+				clickX: e.clientX, 
+				clickY: e.clientY
+			};
 			
 			
 			hs.addEventListener(document, 'mousemove', hs.dragHandler);
@@ -542,6 +750,7 @@ mouseClickHandler : function(e)
 			var hasDragged = hs.dragArgs.hasDragged;
 			
 			if (!hasDragged &&!hs.hasFocused && !/(move|resize)/.test(hs.dragArgs.type)) {
+				if (hs.fireEvent(exp, 'onImageClick'))
 				exp.close();
 			} 
 			else if (hasDragged || (!hasDragged && hs.hasHtmlExpanders)) {
@@ -551,6 +760,7 @@ mouseClickHandler : function(e)
 			if (hs.dragArgs.exp.releaseMask) 
 				hs.dragArgs.exp.releaseMask.style.display = 'none';
 			
+			if (hasDragged) hs.fireEvent(hs.dragArgs.exp, 'onDrop', hs.dragArgs);
 			hs.hasFocused = false;
 			hs.dragArgs = null;
 		
@@ -584,6 +794,7 @@ dragHandler : function(e)
 		|| (distance > (hs.dragSensitivity || 5));
 	
 	if (a.hasDragged && e.clientX > 5 && e.clientY > 5) {
+		if (!hs.fireEvent(exp, 'onDrag', a)) return false;
 		
 		if (a.type == 'resize') exp.resize(a);
 		else {
@@ -605,6 +816,7 @@ wrapperMouseHandler : function (e) {
 		if (!exp.isExpanded) return;
 		if (!exp || !e.relatedTarget || hs.getExpander(e.relatedTarget, true) == exp 
 			|| hs.dragArgs) return;
+		hs.fireEvent(exp, over ? 'onMouseOver' : 'onMouseOut', e);
 		for (var i = 0; i < exp.overlays.length; i++) (function() {
 			var o = hs.$('hsId'+ exp.overlays[i]);
 			if (o && o.hideOnMouseOut) {
@@ -707,6 +919,12 @@ init : function () {
 			}, hs.container
 		);
 		hs.garbageBin = hs.createElement('div', null, { display: 'none' }, hs.container);
+		hs.viewport = hs.createElement('div', {
+				className: 'highslide-viewport highslide-viewport-size'
+			}, {
+				visibility: (hs.safari && hs.uaVersion < 525) ? 'visible' : 'hidden'
+			}, hs.container, 1
+		);
 		hs.clearing = hs.createElement('div', null, 
 			{ clear: 'both', paddingTop: '1px' }, null, true);
 		
@@ -717,10 +935,14 @@ init : function () {
 		Math.easeInQuad = function (t, b, c, d) {
 			return c*(t/=d)*t + b;
 		};
+		Math.easeOutQuad = function (t, b, c, d) {
+			return -c *(t/=d)*(t-2) + b;
+		};
 		
 		hs.hideSelects = hs.ieLt7;
 		hs.hideIframes = ((window.opera && hs.uaVersion < 9) || navigator.vendor == 'KDE' 
 			|| (hs.ie && hs.uaVersion < 5.5));
+		hs.fireEvent(this, 'onActivate');
 	}
 },
 ready : function() {
@@ -731,7 +953,7 @@ ready : function() {
 },
 
 updateAnchors : function() {
-	var el, els, all = [], images = [],groups = {}, re;
+	var el, els, all = [], images = [], htmls = [],groups = {}, re;
 		
 	for (var i = 0; i < hs.openerTagNames.length; i++) {
 		els = document.getElementsByTagName(hs.openerTagNames[i]);
@@ -741,13 +963,14 @@ updateAnchors : function() {
 			if (re) {
 				hs.push(all, el);
 				if (re[0] == 'hs.expand') hs.push(images, el);
+				else if (re[0] == 'hs.htmlExpand') hs.push(htmls, el);
 				var g = hs.getParam(el, 'slideshowGroup') || 'none';
 				if (!groups[g]) groups[g] = [];
 				hs.push(groups[g], el);
 			}
 		}
 	}
-	hs.anchors = { all: all, groups: groups, images: images };
+	hs.anchors = { all: all, groups: groups, images: images, htmls: htmls };
 	return hs.anchors;
 	
 },
@@ -845,10 +1068,12 @@ hs.extend( hs.fx, {
 		},
 
 		_default: function(fx){
-			if ( fx.elem.style && fx.elem.style[ fx.prop ] != null )
-				fx.elem.style[ fx.prop ] = fx.now + fx.unit;
-			else
-				fx.elem[ fx.prop ] = fx.now;
+			try {
+				if ( fx.elem.style && fx.elem.style[ fx.prop ] != null )
+					fx.elem.style[ fx.prop ] = fx.now + fx.unit;
+				else
+					fx.elem[ fx.prop ] = fx.now;
+			} catch (e) {}
 		}
 	}
 });
@@ -991,6 +1216,8 @@ get : function(key) {
 	switch (key) {
 		case 'loadingPos':
 			return this.tpos + this.tb + (this.t - hs.loading['offset'+ this.ucwh]) / 2;
+		case 'loadingPosXfade':
+			return this.pos + this.cb+ this.p1 + (this.size - hs.loading['offset'+ this.ucwh]) / 2;
 		case 'wsize':
 			return this.size + 2 * this.cb + this.p1 + this.p2;
 		case 'fitsize':
@@ -1009,6 +1236,7 @@ get : function(key) {
 calcBorders: function() {
 	// correct for borders
 	this.cb = (this.exp.content['offset'+ this.ucwh] - this.t) / 2;
+	
 	this.marginMax = hs['margin'+ this.ucrb];
 },
 calcThumb: function() {
@@ -1016,7 +1244,7 @@ calcThumb: function() {
 		this.exp.el['offset'+ this.ucwh];
 	this.tpos = this.exp.tpos[this.dim];
 	this.tb = (this.exp.el['offset'+ this.ucwh] - this.t) / 2;
-	if (this.tpos < 1) {
+	if (this.tpos == 0 || this.tpos == -1) {
 		this.tpos = (hs.page[this.wh] / 2) + hs.page['scroll'+ this.uclt];		
 	};
 },
@@ -1024,9 +1252,18 @@ calcExpanded: function() {
 	var exp = this.exp;
 	this.justify = 'auto';
 	
+	// get alignment
+	if (exp.align == 'center') this.justify = 'center';
+	else if (new RegExp(this.lt).test(exp.anchor)) this.justify = null;
+	else if (new RegExp(this.rb).test(exp.anchor)) this.justify = 'max';
+	
 	
 	// size and position
 	this.pos = this.tpos - this.cb + this.tb;
+	
+	if (this.maxHeight && this.dim == 'x')
+		exp.maxWidth = Math.min(exp.maxWidth || this.full, exp.maxHeight * this.full / exp.y.full); 
+		
 	this.size = Math.min(this.full, exp['max'+ this.ucwh] || this.full);
 	this.minSize = exp.allowSizeReduction ? 
 		Math.min(exp['min'+ this.ucwh], this.full) :this.full;
@@ -1035,6 +1272,7 @@ calcExpanded: function() {
 		this.imgSize = this.full;
 	}
 	if (this.dim == 'x' && hs.padToMinWidth) this.minSize = exp.minWidth;
+	this.target = exp['target'+ this.dim.toUpperCase()];
 	this.marginMin = hs['margin'+ this.uclt];
 	this.scroll = hs.page['scroll'+ this.uclt];
 	this.clientSize = hs.page[this.wh];
@@ -1047,11 +1285,14 @@ setSize: function(i) {
 		exp.content.style[this.lt] = this.get('imgPad')+'px';
 	} else
 	this.size = i;
-
+	
 	exp.content.style[this.wh] = i +'px';
 	exp.wrapper.style[this.wh] = this.get('wsize') +'px';
 	if (exp.outline) exp.outline.setPosition();
 	if (exp.releaseMask) exp.releaseMask.style[this.wh] = i +'px';
+	if (this.dim == 'y' && exp.iDoc && exp.body.style.height != 'auto') try {
+		exp.iDoc.body.style.overflow = 'auto';
+	} catch (e) {}
 	if (exp.isHtml) {
 		var d = exp.scrollerDiv;
 		if (this.sizeDiff === undefined)
@@ -1062,6 +1303,10 @@ setSize: function(i) {
 		if (exp.body) exp.body.style[this.wh] = 'auto';
 	}
 	if (this.dim == 'x' && exp.overlayBox) exp.sizeOverlayBox(true);
+	if (this.dim == 'x' && exp.slideshow && exp.isImage) {
+		if (i == this.full) exp.slideshow.disable('full-expand');
+		else exp.slideshow.enable('full-expand');
+	}
 },
 setPos: function(i) {
 	this.pos = i;
@@ -1087,6 +1332,8 @@ hs.Expander = function(a, params, custom, contentType) {
 	
 	hs.continuePreloading = false;
 	this.overlays = [];
+	this.last = hs.last;
+	hs.last = null;
 	hs.init();
 	var key = this.key = hs.expanders.length;
 	// override inline parameters
@@ -1101,10 +1348,12 @@ hs.Expander = function(a, params, custom, contentType) {
 	var el = (params && params.thumbnailId) ? hs.$(params.thumbnailId) : a;
 	el = this.thumb = el.getElementsByTagName('img')[0] || el;
 	this.thumbsUserSetId = el.id || a.id;
+	if (!hs.fireEvent(this, 'onInit')) return true;
 	
 	// check if already open
 	for (var i = 0; i < hs.expanders.length; i++) {
-		if (hs.expanders[i] && hs.expanders[i].a == a) {
+		if (hs.expanders[i] && hs.expanders[i].a == a 
+			&& !(this.last && this.transitions[1] == 'crossfade')) {
 			hs.expanders[i].focus();
 			return false;
 		}
@@ -1117,9 +1366,11 @@ hs.Expander = function(a, params, custom, contentType) {
 		}
 	}
 	hs.expanders[key] = this;
+	if (!hs.allowMultipleInstances && !hs.upcoming) {
 		if (hs.expanders[key-1]) hs.expanders[key-1].close();
 		if (typeof hs.focusKey != 'undefined' && hs.expanders[hs.focusKey])
 			hs.expanders[hs.focusKey].close();
+	}
 	
 	// initiate metrics
 	this.el = el;
@@ -1129,6 +1380,7 @@ hs.Expander = function(a, params, custom, contentType) {
 	x.calcThumb();
 	var y = this.y = new hs.Dimension(this, 'y');
 	y.calcThumb();
+	if (/area/i.test(el.tagName)) this.getImageMapAreaCorrection(el);
 	this.wrapper = hs.createElement(
 		'div', {
 			id: 'highslide-wrapper-'+ this.key,
@@ -1144,7 +1396,8 @@ hs.Expander = function(a, params, custom, contentType) {
 		this.outlineWhileAnimating = 0;
 	
 	// get the outline
-	if (!this.outlineType) {
+	if (!this.outlineType 
+		|| (this.last && this.isImage && this.transitions[1] == 'crossfade')) {
 		this[this.contentType +'Create']();
 	
 	} else if (hs.pendingOutlines[this.outlineType]) {
@@ -1166,7 +1419,7 @@ hs.Expander = function(a, params, custom, contentType) {
 
 hs.Expander.prototype = {
 error : function(e) {
-	//alert ('Line '+ e.lineNumber +': '+ e.message);
+	// alert ('Line '+ e.lineNumber +': '+ e.message);
 	window.location.href = this.src;
 },
 
@@ -1185,9 +1438,19 @@ showLoading : function() {
 	this.loading.onclick = function() {
 		exp.cancelLoading();
 	};
+	
+	
+	if (!hs.fireEvent(this, 'onShowLoading')) return;
 	var exp = this, 
 		l = this.x.get('loadingPos') +'px',
 		t = this.y.get('loadingPos') +'px';
+	if (!tgt && this.last && this.transitions[1] == 'crossfade') 
+		var tgt = this.last; 
+	if (tgt) {
+		l = tgt.x.get('loadingPosXfade') +'px';
+		t = tgt.y.get('loadingPosXfade') +'px';
+		this.loading.style.zIndex = hs.zIndexCounter++;
+	}
 	setTimeout(function () { 
 		if (exp.loading) hs.setStyles(exp.loading, { left: l, top: t, zIndex: hs.zIndexCounter++ })}
 	, 100);
@@ -1218,10 +1481,21 @@ imageCreate : function() {
 	this.showLoading();
 },
 
-htmlCreate : function () { 
+htmlCreate : function () {
+	if (!hs.fireEvent(this, 'onBeforeGetContent')) return;
+	
+	this.content = hs.getCacheBinding(this.a);
+	if (!this.content) 
 		this.content = hs.getNode(this.contentId);
 	if (!this.content) 
 		this.content = hs.getSelfRendered();
+	this.getInline(['maincontent']);
+	if (this.maincontent) {
+		var body = hs.getElementByClass(this.content, 'div', 'highslide-body');
+		if (body) body.appendChild(this.maincontent);
+		this.maincontent.style.display = 'block';
+	}
+	hs.fireEvent(this, 'onAfterGetContent');
 	
 	var innerContent = this.innerContent = this.content;
 	
@@ -1258,6 +1532,19 @@ htmlCreate : function () {
 	});
 	if (innerContent.offsetWidth < this.minWidth)
 		innerContent.style.width = this.minWidth +'px';
+		
+	
+    
+	if (this.objectType == 'ajax' && !hs.getCacheBinding(this.a)) {
+		this.showLoading();
+    	var exp = this;
+    	var ajax = new hs.Ajax(this.a, innerContent);
+		ajax.src = this.src;
+    	ajax.onLoad = function () {	if (hs.expanders[exp.key]) exp.contentLoaded(); };
+    	ajax.onError = function () { location.href = exp.src; };
+    	ajax.run();
+	}
+    else
     
     if (this.objectType == 'iframe' && this.objectLoadTime == 'before') {
 		this.writeExtendedContent();
@@ -1278,6 +1565,7 @@ contentLoaded : function() {
 		if (this.loading) {
 			hs.setStyles(this.loading, { top: '-9999px' });
 			this.loading = null;
+			hs.fireEvent(this, 'onHideLoading');
 		}
 		if (this.isImage) {	
 			x.full = this.content.width;
@@ -1298,10 +1586,12 @@ contentLoaded : function() {
 			left: (x.tpos + x.tb - x.cb) +'px',
 			top: (y.tpos + x.tb - y.cb) +'px'
 		});
+		
+		
+		this.initSlideshow();
 		this.getOverlays();
 		
 		var ratio = x.full / y.full;
-		
 		x.calcExpanded();
 		this.justify(x);
 		
@@ -1309,11 +1599,29 @@ contentLoaded : function() {
 		this.justify(y);
 		if (this.isHtml) this.htmlSizeOperations();
 		if (this.overlayBox) this.sizeOverlayBox(0, 1);
+
 		
 		if (this.allowSizeReduction) {
 			if (this.isImage)
 				this.correctRatio(ratio);
 			else this.fitOverlayBox();
+			var ss = this.slideshow;			
+			if (ss && this.last && ss.controls && ss.fixedControls) {
+				var pos = ss.overlayOptions.position || '', p;
+				for (var dim in hs.oPos) for (var i = 0; i < 5; i++) {
+					p = this[dim];
+					if (pos.match(hs.oPos[dim][i])) {
+						p.pos = this.last[dim].pos 
+							+ (this.last[dim].p1 - p.p1)
+							+ (this.last[dim].size - p.size) * [0, 0, .5, 1, 1][i];
+						if (ss.fixedControls == 'fit') {
+							if (p.pos + p.size + p.p1 + p.p2 > p.scroll + p.clientSize - p.marginMax)
+								p.pos = p.scroll + p.clientSize - p.size - p.marginMin - p.marginMax - p.p1 - p.p2;
+							if (p.pos < p.scroll + p.marginMin) p.pos = p.scroll + p.marginMin; 
+						} 
+					}
+				}
+			}
 			if (this.isImage && this.x.full > (this.x.imgSize || this.x.size)) {
 				this.createFullExpand();
 				if (this.overlays.length == 1) this.sizeOverlayBox();
@@ -1349,10 +1657,9 @@ writeExtendedContent : function () {
 			h = this.objectHeight || hs.page.height - hDiff - hs.marginTop - hs.marginBottom,
 			onload = this.objectLoadTime == 'before' ? 
 				' onload="if (hs.expanders['+ this.key +']) hs.expanders['+ this.key +'].contentLoaded()" ' : '';
-		
 		this.body.innerHTML += '<iframe name="hs'+ (new Date()).getTime() +'" frameborder="0" key="'+ this.key +'" '
-			+' allowtransparency="true" style="width:'+ this.objectWidth +'px; height:'+ h +'px" '
-			+ onload +' src="'+ this.src +'"></iframe>';
+			+' style="width:'+ this.objectWidth +'px; height:'+ h +'px" '
+			+ onload +' src="'+ this.src +'" ></iframe>';
 		this.ruler = this.body.getElementsByTagName('div')[0];
 		this.iframe = this.body.getElementsByTagName('iframe')[0];
 		
@@ -1370,7 +1677,7 @@ writeExtendedContent : function () {
 	this.hasExtendedContent = true;
 },
 htmlGetSize : function() {
-	if (this.iframe && !this.objectHeight) { // loadtime before		
+	if (this.iframe && !this.objectHeight) { // loadtime before
 		this.iframe.style.height = this.body.style.height = this.getIframePageHeight() +'px';
 	}
 	this.innerContent.appendChild(hs.clearing);
@@ -1382,12 +1689,13 @@ htmlGetSize : function() {
 	}
 	hs.setStyles( this.wrapper, { position: 'absolute',	padding: '0'});
 	hs.setStyles( this.content, { width: this.x.t +'px', height: this.y.t +'px'});
+	
 },
 
 getIframePageHeight : function() {
 	var h;
 	try {
-		var doc = this.iframe.contentDocument || this.iframe.contentWindow.document;
+		var doc = this.iDoc = this.iframe.contentDocument || this.iframe.contentWindow.document;
 		var clearing = doc.createElement('div');
 		clearing.style.clear = 'both';
 		doc.body.appendChild(clearing);
@@ -1405,6 +1713,9 @@ correctIframeSize : function () {
 	if (wDiff < 0) wDiff = 0;
 	
 	var hDiff = this.innerContent.offsetHeight - this.iframe.offsetHeight;
+	if (this.iDoc && !this.objectHeight && !this.height && this.y.size == this.y.full) try {
+		this.iDoc.body.style.overflow = 'hidden';
+	} catch (e) {}
 	hs.setStyles(this.iframe, { 
 		width: Math.abs(this.x.size - wDiff) +'px', 
 		height: Math.abs(this.y.size - hDiff) +'px'
@@ -1416,6 +1727,7 @@ correctIframeSize : function () {
     	
     this.scrollingContent = this.iframe;
     this.scrollerDiv = this.scrollingContent;
+	
 },
 htmlSizeOperations : function () {
 	
@@ -1475,12 +1787,52 @@ htmlSizeOperations : function () {
 	}
 },
 
+getImageMapAreaCorrection : function(area) {
+	var c = area.coords.split(',');
+	for (var i = 0; i < c.length; i++) c[i] = parseInt(c[i]);
+	
+	if (area.shape.toLowerCase() == 'circle') {
+		this.x.tpos += c[0] - c[2];
+		this.y.tpos += c[1] - c[2];
+		this.x.t = this.y.t = 2 * c[2];
+	} else {
+		var maxX, maxY, minX = maxX = c[0], minY = maxY = c[1];
+		for (var i = 0; i < c.length; i++) {
+			if (i % 2 == 0) {
+				minX = Math.min(minX, c[i]);
+				maxX = Math.max(maxX, c[i]);
+			} else {
+				minY = Math.min(minY, c[i]);
+				maxY = Math.max(maxY, c[i]);
+			}
+		}
+		this.x.tpos += minX;
+		this.x.t = maxX - minX;
+		this.y.tpos += minY;
+		this.y.t = maxY - minY;
+	}
+},
 justify : function (p, moveOnly) {
 	var tgtArr, tgt = p.target, dim = p == this.x ? 'x' : 'y';
+	
+	if (tgt && tgt.match(/ /)) {
+		tgtArr = tgt.split(' ');
+		tgt = tgtArr[0];
+	}
+	if (tgt && hs.$(tgt)) {
+		p.pos = hs.getPosition(hs.$(tgt))[dim];
+		if (tgtArr && tgtArr[1] && tgtArr[1].match(/^[-]?[0-9]+px$/)) 
+			p.pos += parseInt(tgtArr[1]);
+		if (p.size < p.minSize) p.size = p.minSize;
+		
+	} else if (p.justify == 'auto' || p.justify == 'center') {
 	
 		var hasMovedMin = false;
 		
 		var allowReduce = p.exp.allowSizeReduction;
+		if (p.justify == 'center')
+			p.pos = Math.round(p.scroll + (p.clientSize + p.marginMin - p.marginMax - p.get('wsize')) / 2);
+		else
 			p.pos = Math.round(p.pos - ((p.get('wsize') - p.t) / 2));
 		if (p.pos < p.scroll + p.marginMin) {
 			p.pos = p.scroll + p.marginMin;
@@ -1492,7 +1844,7 @@ justify : function (p, moveOnly) {
 		}
 		if (p.pos + p.get('wsize') > p.scroll + p.clientSize - p.marginMax) {
 			if (!moveOnly && hasMovedMin && allowReduce) {
-				p.size = p.get(dim == 'y' ? 'fitsize' : 'maxsize');
+				p.size = Math.min(p.size, p.get(dim == 'y' ? 'fitsize' : 'maxsize'));
 			} else if (p.get('wsize') < p.get('fitsize')) {
 				p.pos = p.scroll + p.clientSize - p.marginMax - p.get('wsize');
 			} else { // image larger than viewport
@@ -1506,6 +1858,10 @@ justify : function (p, moveOnly) {
 			allowReduce = false;
 		}
 		
+	
+	} else if (p.justify == 'max') {
+		p.pos = Math.floor(p.pos - p.size + p.t);
+	}
 	
 		
 	if (p.pos < p.marginMin) {
@@ -1548,7 +1904,7 @@ correctRatio : function(ratio) {
 		x.size = xSize;
 		y.size = ySize;
 	}
-	this.fitOverlayBox(useBox ? null : ratio);
+	changed = this.fitOverlayBox(useBox ? null : ratio, changed);
 	if (useBox && y.size < y.imgSize) {
 		y.imgSize = y.size;
 		x.imgSize = y.size * ratio;
@@ -1564,21 +1920,34 @@ correctRatio : function(ratio) {
 		if (this.overlayBox) this.sizeOverlayBox();
 	}
 },
-fitOverlayBox : function(ratio) {
+fitOverlayBox : function(ratio, changed) {
 	var x = this.x, y = this.y;
-	if (this.overlayBox) {
+	if (this.overlayBox && (this.isImage || this.allowHeightReduction)) {
 		while (y.size > this.minHeight && x.size > this.minWidth 
 				&&  y.get('wsize') > y.get('fitsize')) {
 			y.size -= 10;
 			if (ratio) x.size = y.size * ratio;
 			this.sizeOverlayBox(0, 1);
+			changed = true;
 		}
+	}
+	return changed;
+},
+
+reflow : function () {
+	if (this.scrollerDiv) {
+		var h = /iframe/i.test(this.scrollerDiv.tagName) ? (this.getIframePageHeight() + 1) +'px' : 'auto';
+		if (this.body) this.body.style.height = h;
+		this.scrollerDiv.style.height = h;
+		this.y.setSize(this.innerContent.offsetHeight);
 	}
 },
 
 show : function () {
 	var x = this.x, y = this.y;
 	this.doShowHide('hidden');
+	hs.fireEvent(this, 'onBeforeExpand');
+	if (this.slideshow && this.slideshow.thumbstrip) this.slideshow.thumbstrip.selectThumb();
 	
 	// Apply size change
 	this.changeSize(
@@ -1601,6 +1970,17 @@ show : function () {
 },
 
 changeSize : function(up, to, dur) {
+	// transition
+	var trans = this.transitions,
+	other = up ? (this.last ? this.last.a : null) : hs.upcoming,
+	t = (trans[1] && other 
+			&& hs.getParam(other, 'transitions')[1] == trans[1]) ?
+		trans[1] : trans[0];
+		
+	if (this[t] && t != 'expand') {
+		this[t](up, to);
+		return;
+	}
 	
 	if (this.outline && !this.outlineWhileAnimating) {
 		if (up) this.outline.setPosition();
@@ -1674,6 +2054,203 @@ changeSize : function(up, to, dur) {
 
 
 
+fade : function(up, to) {
+	this.outlineWhileAnimating = false;
+	var exp = this,	t = up ? hs.expandDuration : 0;
+	
+	if (up) {
+		hs.animate(this.wrapper, to.wrapper, 0);
+		hs.setStyles(this.wrapper, { opacity: 0, visibility: 'visible' });
+		hs.animate(this.content, to.content, 0);
+		this.content.style.visibility = 'visible';
+
+		hs.animate(this.wrapper, { opacity: 1 }, t, null, 
+			function() { exp.afterExpand(); });
+	}
+	
+	if (this.outline) {
+		this.outline.table.style.zIndex = this.wrapper.style.zIndex;
+		var dir = up || -1, 
+			offset = this.outline.offset,
+			startOff = up ? 3 : offset,
+			endOff = up? offset : 3;
+		for (var i = startOff; dir * i <= dir * endOff; i += dir, t += 25) {
+			(function() {
+				var o = up ? endOff - i : startOff - i;
+				setTimeout(function() {
+					exp.outline.setPosition(0, o, 1);
+				}, t);
+			})();
+		}
+	}
+	
+	
+	if (up) {}//setTimeout(function() { exp.afterExpand(); }, t+50);
+	else {
+		setTimeout( function() {
+			if (exp.outline) exp.outline.destroy(exp.preserveContent);
+			
+			exp.destroyOverlays();
+	
+			hs.animate( exp.wrapper, { opacity: 0 }, hs.restoreDuration, null, function(){
+				exp.afterClose();
+			});
+		}, t);		
+	}
+},
+crossfade : function (up, to, from) {
+	if (!up) return;
+	var exp = this, 
+		last = this.last,
+		x = this.x,
+		y = this.y,
+		lastX = last.x,
+		lastY = last.y,
+		wrapper = this.wrapper,
+		content = this.content,
+		overlayBox = this.overlayBox;
+	hs.removeEventListener(document, 'mousemove', hs.dragHandler);
+	
+	hs.setStyles(content, { 
+		width: (x.imgSize || x.size) +'px', 
+		height: (y.imgSize || y.size) +'px'		
+	});
+	if (overlayBox) overlayBox.style.overflow = 'visible';
+	this.outline = last.outline;
+	if (this.outline) this.outline.exp = exp;
+	last.outline = null;
+	var fadeBox = hs.createElement('div', {
+			className: 'highslide-image'
+		}, { 
+			position: 'absolute', 
+			zIndex: 4,
+			overflow: 'hidden',
+			display: 'none'
+		}
+	);
+	var names = { oldImg: last, newImg: this };
+	for (var n in names) { 	
+		this[n] = names[n].content.cloneNode(1);
+		hs.setStyles(this[n], {
+			position: 'absolute',
+			border: 0,
+			visibility: 'visible'
+		});
+		fadeBox.appendChild(this[n]);
+	}
+	wrapper.appendChild(fadeBox);
+	if (this.isHtml) hs.setStyles(this.mediumContent, { 
+		left: 0,
+		top: 0
+	});
+	if (overlayBox) {
+		overlayBox.className = '';
+		wrapper.appendChild(overlayBox);
+	}
+	fadeBox.style.display = '';
+	last.content.style.display = 'none';
+	
+	
+	if (hs.safari) {
+		var match = navigator.userAgent.match(/Safari\/([0-9]{3})/);
+		if (match && parseInt(match[1]) < 525) this.wrapper.style.visibility = 'visible';
+	}
+	hs.animate(wrapper, {
+		width: x.size
+	}, {
+		duration: hs.transitionDuration, 
+		step: function(val, args) {
+			var pos = args.pos,
+				invPos = 1 - pos;
+			var prop,
+				size = {}, 
+				props = ['pos', 'size', 'p1', 'p2'];
+			for (var n in props) {
+				prop = props[n];
+				size['x'+ prop] = Math.round(invPos * lastX[prop] + pos * x[prop]);
+				size['y'+ prop] = Math.round(invPos * lastY[prop] + pos * y[prop]);
+				size.ximgSize = Math.round(
+					invPos * (lastX.imgSize || lastX.size) + pos * (x.imgSize || x.size));
+				size.ximgPad = Math.round(invPos * lastX.get('imgPad') + pos * x.get('imgPad'));
+				size.yimgSize = Math.round(
+					invPos * (lastY.imgSize || lastY.size) + pos * (y.imgSize || y.size));
+				size.yimgPad = Math.round(invPos * lastY.get('imgPad') + pos * y.get('imgPad'));
+			}
+			if (exp.outline) exp.outline.setPosition({ 
+				x: size.xpos, 
+				y: size.ypos, 
+				w: size.xsize + size.xp1 + size.xp2 + 2 * x.cb, 
+				h: size.ysize + size.yp1 + size.yp2 + 2 * y.cb
+			});
+			last.wrapper.style.clip = 'rect('
+				+ (size.ypos - lastY.pos)+'px, '
+				+ (size.xsize + size.xp1 + size.xp2 + size.xpos + 2 * lastX.cb - lastX.pos) +'px, '
+				+ (size.ysize + size.yp1 + size.yp2 + size.ypos + 2 * lastY.cb - lastY.pos) +'px, '
+				+ (size.xpos - lastX.pos)+'px)';
+				
+			hs.setStyles(content, {
+				top: (size.yp1 + y.get('imgPad')) +'px',
+				left: (size.xp1 + x.get('imgPad')) +'px',
+				marginTop: (y.pos - size.ypos) +'px',
+				marginLeft: (x.pos - size.xpos) +'px'
+			});
+			hs.setStyles(wrapper, {
+				top: size.ypos +'px',
+				left: size.xpos +'px',
+				width: (size.xp1 + size.xp2 + size.xsize + 2 * x.cb)+ 'px',
+				height: (size.yp1 + size.yp2 + size.ysize + 2 * y.cb) + 'px'
+			});
+			hs.setStyles(fadeBox, {
+				width: (size.ximgSize || size.xsize) + 'px',
+				height: (size.yimgSize || size.ysize) +'px',
+				left: (size.xp1 + size.ximgPad)  +'px',
+				top: (size.yp1 + size.yimgPad) +'px',
+				visibility: 'visible'
+			});
+			
+			hs.setStyles(exp.oldImg, {
+				top: (lastY.pos - size.ypos + lastY.p1 - size.yp1 + lastY.get('imgPad') - size.yimgPad)+'px',
+				left: (lastX.pos - size.xpos + lastX.p1 - size.xp1 + lastX.get('imgPad') - size.ximgPad)+'px'
+			});		
+			
+			hs.setStyles(exp.newImg, {
+				opacity: pos,
+				top: (y.pos - size.ypos + y.p1 - size.yp1 + y.get('imgPad') - size.yimgPad) +'px',
+				left: (x.pos - size.xpos + x.p1 - size.xp1 + x.get('imgPad') - size.ximgPad) +'px'
+			});
+			if (overlayBox) hs.setStyles(overlayBox, {
+				width: size.xsize + 'px',
+				height: size.ysize +'px',
+				left: (size.xp1 + x.cb)  +'px',
+				top: (size.yp1 + y.cb) +'px'
+			});
+		},
+		complete: function () {
+			wrapper.style.visibility = content.style.visibility = 'visible';
+			content.style.display = 'block';
+			fadeBox.style.display = 'none';
+			exp.a.className += ' highslide-active-anchor';
+			exp.afterExpand();
+			last.afterClose();
+			exp.last = null;
+		}
+		
+	});
+},
+reuseOverlay : function(o, el) {
+	if (!this.last) return false;
+	for (var i = 0; i < this.last.overlays.length; i++) {
+		var oDiv = hs.$('hsId'+ this.last.overlays[i]);
+		if (oDiv && oDiv.hsId == o.hsId) {
+			this.genOverlayBox();
+			oDiv.reuse = this.key;
+			hs.push(this.overlays, this.last.overlays[i]);
+			return true;
+		}
+	}
+	return false;
+},
+
 
 afterExpand : function() {
 	this.isExpanded = true;	
@@ -1691,12 +2268,14 @@ afterExpand : function() {
 		if (hs.ie && typeof this.isClosing != 'boolean') // first open 
 			this.iframe.style.width = (this.objectWidth - 1) +'px'; // hasLayout
 	}
+	if (this.dimmingOpacity) hs.dim(this);
 	if (hs.upcoming && hs.upcoming == this.a) hs.upcoming = null;
 	this.prepareNextOutline();
 	var p = hs.page, mX = hs.mouse.x + p.scrollLeft, mY = hs.mouse.y + p.scrollTop;
 	this.mouseIsOver = this.x.pos < mX && mX < this.x.pos + this.x.get('wsize')
 		&& this.y.pos < mY && mY < this.y.pos + this.y.get('wsize');	
 	if (this.overlayBox) this.showOverlays();
+	hs.fireEvent(this, 'onAfterExpand');
 	
 },
 
@@ -1737,13 +2316,58 @@ getAnchorIndex : function() {
 },
 
 
+getNumber : function() {
+	if (this[this.numberPosition]) {
+		var arr = hs.anchors.groups[this.slideshowGroup || 'none'];
+		if (arr) {
+			var s = hs.lang.number.replace('%1', this.getAnchorIndex() + 1).replace('%2', arr.length);
+			this[this.numberPosition].innerHTML = 
+				'<div class="highslide-number">'+ s +'</div>'+ this[this.numberPosition].innerHTML;
+		}
+	}
+},
+initSlideshow : function() {
+	if (!this.last) {
+		for (var i = 0; i < hs.slideshows.length; i++) {
+			var ss = hs.slideshows[i], sg = ss.slideshowGroup;
+			if (typeof sg == 'undefined' || sg === null || sg === this.slideshowGroup) 
+				this.slideshow = new hs.Slideshow(this.key, ss);
+		} 
+	} else {
+		this.slideshow = this.last.slideshow;
+	}
+	var ss = this.slideshow;
+	if (!ss) return;
+	var key = ss.expKey = this.key;
+	
+	ss.checkFirstAndLast();
+	ss.disable('full-expand');
+	if (ss.controls) {
+		var o = ss.overlayOptions || {};
+		o.overlayId = ss.controls;
+		o.hsId = 'controls';		
+		this.createOverlay(o);
+	}
+	if (ss.thumbstrip) ss.thumbstrip.add(this);
+	if (!this.last && this.autoplay) ss.play(true);
+	if (ss.autoplay) {
+		ss.autoplay = setTimeout(function() {
+			hs.next(key);
+		}, (ss.interval || 500));
+	}
+},
+
 cancelLoading : function() {
 	hs.discardElement (this.wrapper);
 	hs.expanders[this.key] = null;
+	if (hs.upcoming == this.a) hs.upcoming = null;
+	hs.undim(this.key);
 	if (this.loading) hs.loading.style.left = '-9999px';
+	hs.fireEvent(this, 'onHideLoading');
 },
 
 writeCredits : function () {
+	if (this.credits) return;
 	this.credits = hs.createElement('a', {
 		href: hs.creditsHref,
 		target: hs.creditsTarget,
@@ -1753,13 +2377,16 @@ writeCredits : function () {
 	});
 	this.createOverlay({ 
 		overlayId: this.credits, 
-		position: this.creditsPosition || 'top left' 
+		position: this.creditsPosition || 'top left', 
+		hsId: 'credits' 
 	});
 },
 
 getInline : function(types, addOverlay) {
 	for (var i = 0; i < types.length; i++) {
 		var type = types[i], s = null;
+		if (type == 'caption' && !hs.fireEvent(this, 'onBeforeGetCaption')) return;
+		else if (type == 'heading' && !hs.fireEvent(this, 'onBeforeGetHeading')) return;
 		if (!this[type +'Id'] && this.thumbsUserSetId)  
 			this[type +'Id'] = type +'-for-'+ this.thumbsUserSetId;
 		if (this[type +'Id']) this[type] = hs.getNode(this[type +'Id']);
@@ -1770,15 +2397,20 @@ getInline : function(types, addOverlay) {
 			s = this[type +'Text'];
 		}
 		if (!this[type] && !s) {
-			var next = this.a.nextSibling;
-			while (next && !hs.isHsAnchor(next)) {
-				if ((new RegExp('highslide-'+ type)).test(next.className || null)) {
-					this[type] = next.cloneNode(1);
-					break;
+			this[type] = hs.getNode(this.a['_'+ type + 'Id']);
+			if (!this[type]) {
+				var next = this.a.nextSibling;
+				while (next && !hs.isHsAnchor(next)) {
+					if ((new RegExp('highslide-'+ type)).test(next.className || null)) {
+						if (!next.id) this.a['_'+ type + 'Id'] = next.id = 'hsId'+ hs.idCounter++;
+						this[type] = hs.getNode(next.id);
+						break;
+					}
+					next = next.nextSibling;
 				}
-				next = next.nextSibling;
 			}
 		}
+		if (!this[type] && !s && this.numberPosition == type) s = '\n';
 		
 		if (!this[type] && s) this[type] = hs.createElement('div', 
 				{ className: 'highslide-'+ type, innerHTML: s } );
@@ -1815,12 +2447,13 @@ showHideElements : function (tagName, visibility) {
 				var elPos = hs.getPosition(els[i]);
 				elPos.w = els[i].offsetWidth;
 				elPos.h = els[i].offsetHeight;
-			
+				if (!this.dimmingOpacity) { // hide all if dimming
 				
 					var clearsX = (elPos.x + elPos.w < this.x.get('opos') 
 						|| elPos.x > this.x.get('opos') + this.x.get('osize'));
 					var clearsY = (elPos.y + elPos.h < this.y.get('opos') 
 						|| elPos.y > this.y.get('opos') + this.y.get('osize'));
+				}
 				var wrapperKey = hs.getWrapperKey(els[i]);
 				if (!clearsX && !clearsY && wrapperKey != this.key) { // element falls behind image
 					if (!hiddenBy) {
@@ -1846,6 +2479,23 @@ showHideElements : function (tagName, visibility) {
 
 focus : function() {
 	this.wrapper.style.zIndex = hs.zIndexCounter += 2;
+	// blur others
+	for (var i = 0; i < hs.expanders.length; i++) {
+		if (hs.expanders[i] && i == hs.focusKey) {
+			var blurExp = hs.expanders[i];
+			blurExp.content.className += ' highslide-'+ blurExp.contentType +'-blur';
+			if (blurExp.isImage) {
+				blurExp.content.style.cursor = hs.ie ? 'hand' : 'pointer';
+				blurExp.content.title = hs.lang.focusTitle;	
+			}	
+			hs.fireEvent(blurExp, 'onBlur');
+		}
+	}
+	
+	// focus this
+	if (this.outline) this.outline.table.style.zIndex 
+		= this.wrapper.style.zIndex - 1;
+	this.content.className = 'highslide-'+ this.contentType;
 	if (this.isImage) {
 		this.content.title = hs.lang.restoreTitle;
 		
@@ -1857,6 +2507,7 @@ focus : function() {
 	}
 	hs.focusKey = this.key;	
 	hs.addEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);	
+	hs.fireEvent(this, 'onFocus');	
 },
 moveTo: function(x, y) {
 	this.x.setPos(x);
@@ -1876,11 +2527,18 @@ resize : function (e) {
 resizeTo: function(w, h) {
 	this.y.setSize(h);
 	this.x.setSize(w);
+	this.wrapper.style.height = this.y.get('wsize') +'px';
 },
 
 close : function() {
 	if (this.isClosing || !this.isExpanded) return;
+	if (this.transitions[1] == 'crossfade' && hs.upcoming) {
+		hs.getExpander(hs.upcoming).cancelLoading();
+		hs.upcoming = null;
+	}
+	if (!hs.fireEvent(this, 'onBeforeClose')) return;
 	this.isClosing = true;
+	if (this.slideshow && !hs.upcoming) this.slideshow.pause();
 	
 	hs.removeEventListener(document, window.opera ? 'keypress' : 'keydown', hs.keyHandler);
 	
@@ -1938,7 +2596,7 @@ awake : function() {try {
 	
 	hs.expanders[this.key] = this;
 	
-	if (hs.focusKey != this.key) {	
+	if (!hs.allowMultipleInstances &&hs.focusKey != this.key) {	
 		try { hs.expanders[hs.focusKey].close(); } catch (e){}
 	}
 	
@@ -1951,6 +2609,9 @@ awake : function() {try {
 		if (!this.outlineWhileAnimating) stl.visibility = 'hidden';
 		hs.setStyles (o.table, stl);		
 	}
+	if (this.slideshow) {
+		this.initSlideshow();
+	}
 		
 	this.show();
 } catch (e) {}
@@ -1959,11 +2620,15 @@ awake : function() {try {
 },
 
 createOverlay : function (o) {
-	var el = o.overlayId;
+	var el = o.overlayId, 
+		relToVP = (o.relativeTo == 'viewport' && !/panel$/.test(o.position));
 	if (typeof el == 'string') el = hs.getNode(el);
 	if (o.html) el = hs.createElement('div', { innerHTML: o.html });
 	if (!el || typeof el == 'string') return;
+	if (!hs.fireEvent(this, 'onCreateOverlay', { overlay: el })) return;
 	el.style.display = 'block';
+	o.hsId = o.hsId || o.overlayId; 
+	if (this.transitions[1] == 'crossfade' && this.reuseOverlay(o, el)) return;
 	this.genOverlayBox();
 	var width = o.width && /^[0-9]+(px|%)$/.test(o.width) ? o.width : 'auto';
 	if (/^(left|right)panel$/.test(o.position) && !/^[0-9]+px$/.test(o.width)) width = '200px';
@@ -1977,9 +2642,11 @@ createOverlay : function (o) {
 			width: width,
 			direction: hs.lang.cssDirection || '',
 			opacity: 0
-		},this.overlayBox,
+		},
+		relToVP ? hs.viewport :this.overlayBox,
 		true
 	);
+	if (relToVP) overlay.hsKey = this.key;
 	
 	overlay.appendChild(el);
 	hs.extend(overlay, {
@@ -1999,8 +2666,15 @@ createOverlay : function (o) {
 },
 positionOverlay : function(overlay) {
 	var p = overlay.position || 'middle center',
+		relToVP = (overlay.relativeTo == 'viewport'),
 		offX = overlay.offsetX,
 		offY = overlay.offsetY;
+	if (relToVP) {
+		hs.viewport.style.display = 'block';
+		overlay.hsKey = this.key;
+		if (overlay.offsetWidth > overlay.parentNode.offsetWidth)
+			overlay.style.width = '100%';
+	} else
 	if (overlay.parentNode != this.overlayBox) this.overlayBox.appendChild(overlay);
 	if (/left$/.test(p)) overlay.style.left = offX +'px'; 
 	
@@ -2031,6 +2705,10 @@ positionOverlay : function(overlay) {
 		});
 		this.x.p2 = overlay.offsetWidth;
 	}
+	var parOff = overlay.parentNode.offsetHeight;
+	overlay.style.height = 'auto';
+	if (relToVP && overlay.offsetHeight > parOff)
+		overlay.style.height = hs.ieLt7 ? parOff +'px' : '100%';
 
 	if (/^top/.test(p)) overlay.style.top = offY +'px'; 
 	if (/^middle/.test(p))	hs.setStyles (overlay, { 
@@ -2064,6 +2742,9 @@ positionOverlay : function(overlay) {
 
 getOverlays : function() {	
 	this.getInline(['heading', 'caption'], true);
+	this.getNumber();
+	if (this.caption) hs.fireEvent(this, 'onAfterGetCaption');
+	if (this.heading) hs.fireEvent(this, 'onAfterGetHeading');
 	if (this.heading && this.dragByHeading) this.heading.className += ' highslide-move';
 	if (hs.showCredits) this.writeCredits();
 	for (var i = 0; i < hs.overlays.length; i++) {
@@ -2094,7 +2775,7 @@ genOverlayBox : function() {
 			height: (this.y.size || this.y.full) +'px',
 			visibility : 'hidden',
 			overflow : 'hidden',
-			zIndex : hs.ie ? 4 : null
+			zIndex : hs.ie ? 4 : 'auto'
 		},
 		hs.container,
 		true
@@ -2146,7 +2827,7 @@ showOverlays : function() {
 	this.wrapper.appendChild (b);
 	for (var i = 0; i < this.overlays.length; i++) {
 		var o = hs.$('hsId'+ this.overlays[i]);
-		o.style.zIndex = 4;
+		o.style.zIndex = o.hsId == 'controls' ? 5 : 4;
 		if (!o.hideOnMouseOut || this.mouseIsOver) {
 			o.style.visibility = 'visible';
 			hs.setStyles(o, { visibility: 'visible', display: '' });
@@ -2157,6 +2838,14 @@ showOverlays : function() {
 
 destroyOverlays : function() {
 	if (!this.overlays.length) return;
+	if (this.slideshow) {
+		var c = this.slideshow.controls;
+		if (c && hs.getExpander(c) == this) c.parentNode.removeChild(c);
+	}
+	for (var i = 0; i < this.overlays.length; i++) {
+		var o = hs.$('hsId'+ this.overlays[i]);
+		if (o && o.parentNode == hs.viewport && hs.getExpander(o) == this) hs.discardElement(o);
+	}
 	if (this.isHtml && this.preserveContent) {
 		this.overlayBox.style.top = '-9999px';
 		hs.container.appendChild(this.overlayBox);
@@ -2167,6 +2856,10 @@ destroyOverlays : function() {
 
 
 createFullExpand : function () {
+	if (this.slideshow && this.slideshow.controls) {
+		this.slideshow.enable('full-expand');
+		return;
+	}
 	this.fullExpandLabel = hs.createElement(
 		'a', {
 			href: 'javascript:hs.expanders['+ this.key +'].doFullExpand();',
@@ -2174,6 +2867,7 @@ createFullExpand : function () {
 			className: 'highslide-full-expand'
 		}
 	);
+	if (!hs.fireEvent(this, 'onCreateFullExpand')) return;
 	
 	this.createOverlay({ 
 		overlayId: this.fullExpandLabel, 
@@ -2185,6 +2879,7 @@ createFullExpand : function () {
 
 doFullExpand : function () {
 	try {
+		if (!hs.fireEvent(this, 'onDoFullExpand')) return;
 		if (this.fullExpandLabel) hs.discardElement(this.fullExpandLabel);
 		
 		this.focus();
@@ -2208,7 +2903,8 @@ afterClose : function () {
 	
 	this.doShowHide('visible');	
 	
-	if (this.isHtml && this.preserveContent) {
+	if (this.isHtml && this.preserveContent
+			 && this.transitions[1] != 'crossfade') {
 		this.sleep();
 	} else {
 		if (this.outline && this.outlineWhileAnimating) this.outline.destroy();
@@ -2216,11 +2912,334 @@ afterClose : function () {
 		hs.discardElement(this.wrapper);
 	}
 	if (hs.mask) hs.mask.style.display = 'none';
+	this.destroyOverlays();
+	if (!hs.viewport.childNodes.length) hs.viewport.style.display = 'none';
 	
-	hs.expanders[this.key] = null;
+	if (this.dimmingOpacity) hs.undim(this.key);
+	hs.fireEvent(this, 'onAfterClose');
+	hs.expanders[this.key] = null;		
+	hs.reOrder();
 }
 
 };
+
+
+// hs.Ajax object prototype
+hs.Ajax = function (a, content, pre) {
+	this.a = a;
+	this.content = content;
+	this.pre = pre;
+};
+
+hs.Ajax.prototype = {
+run : function () {
+	var xhr;
+	if (!this.src) this.src = hs.getSrc(this.a);
+	if (this.src.match('#')) {
+		var arr = this.src.split('#');
+		this.src = arr[0];
+		this.id = arr[1];
+	}
+	if (hs.cachedGets[this.src]) {
+		this.cachedGet = hs.cachedGets[this.src];
+		if (this.id) this.getElementContent();
+		else this.loadHTML();
+		return;
+	}
+	try { xhr = new XMLHttpRequest(); }
+	catch (e) {
+		try { xhr = new ActiveXObject("Msxml2.XMLHTTP"); }
+		catch (e) {
+			try { xhr = new ActiveXObject("Microsoft.XMLHTTP"); }
+			catch (e) { this.onError(); }
+		}
+	}
+	var pThis = this; 
+	xhr.onreadystatechange = function() {
+		if(pThis.xhr.readyState == 4) {
+			if (pThis.id) pThis.getElementContent();
+			else pThis.loadHTML();
+		}
+	};
+	var src = this.src;
+	this.xhr = xhr;
+	if (hs.forceAjaxReload) 
+		src = src.replace(/$/, (/\?/.test(src) ? '&' : '?') +'dummy='+ (new Date()).getTime());
+	xhr.open('GET', src, true);
+	xhr.setRequestHeader('X-Requested-With', 'XMLHttpRequest');
+	xhr.setRequestHeader('Content-Type', 'application/x-www-form-urlencoded');
+	xhr.send(null);
+},
+
+getElementContent : function() {
+	hs.init();
+	var attribs = window.opera || hs.ie6SSL ? { src: 'about:blank' } : null;
+	
+	this.iframe = hs.createElement('iframe', attribs, 
+		{ position: 'absolute', top: '-9999px' }, hs.container);
+		
+	this.loadHTML();
+},
+
+loadHTML : function() {
+	var s = this.cachedGet || this.xhr.responseText,
+		regBody;
+	if (this.pre) hs.cachedGets[this.src] = s;
+	if (!hs.ie || hs.uaVersion >= 5.5) {
+		s = s.replace(new RegExp('<link[^>]*>', 'gi'), '')
+			.replace(new RegExp('<script[^>]*>.*?</script>', 'gi'), '');
+		if (this.iframe) {
+			var doc = this.iframe.contentDocument;
+			if (!doc && this.iframe.contentWindow) doc = this.iframe.contentWindow.document;
+			if (!doc) { // Opera
+				var pThis = this;
+				setTimeout(function() {	pThis.loadHTML(); }, 25);
+				return;
+			}
+			doc.open();
+			doc.write(s);
+			doc.close();
+			try { s = doc.getElementById(this.id).innerHTML; } catch (e) {
+				try { s = this.iframe.document.getElementById(this.id).innerHTML; } catch (e) {} // opera
+			}
+			hs.discardElement(this.iframe);
+		} else {
+			regBody = /(<body[^>]*>|<\/body>)/ig;
+			
+			if (regBody.test(s)) s = s.split(regBody)[hs.ie ? 1 : 2];
+		}
+	}
+	hs.getElementByClass(this.content, 'DIV', 'highslide-body').innerHTML = s;
+	this.onLoad();
+	for (var x in this) this[x] = null;
+}
+};
+
+
+hs.Slideshow = function (expKey, options) {
+	if (hs.dynamicallyUpdateAnchors !== false) hs.updateAnchors();
+	this.expKey = expKey;
+	for (var x in options) this[x] = options[x];
+	if (this.useControls) this.getControls();
+	if (this.thumbstrip) this.thumbstrip = hs.Thumbstrip(this);
+};
+hs.Slideshow.prototype = {
+getControls: function() {
+	this.controls = hs.createElement('div', { innerHTML: hs.replaceLang(hs.skin.controls) }, 
+		null, hs.container);
+	
+	var buttons = ['play', 'pause', 'previous', 'next', 'move', 'full-expand', 'close'];
+	this.btn = {};
+	var pThis = this;
+	for (var i = 0; i < buttons.length; i++) {
+		this.btn[buttons[i]] = hs.getElementByClass(this.controls, 'li', 'highslide-'+ buttons[i]);
+		this.enable(buttons[i]);
+	}
+	this.btn.pause.style.display = 'none';
+	//this.disable('full-expand');
+},
+checkFirstAndLast: function() {
+	if (this.repeat || !this.controls) return;
+	var exp = hs.expanders[this.expKey],
+		cur = exp.getAnchorIndex(), 
+		re = /disabled$/;
+	if (cur == 0) 
+		this.disable('previous');
+	else if (re.test(this.btn.previous.getElementsByTagName('a')[0].className))
+		this.enable('previous');
+	if (cur + 1 == hs.anchors.groups[exp.slideshowGroup || 'none'].length) {
+		this.disable('next');
+		this.disable('play');
+	} else if (re.test(this.btn.next.getElementsByTagName('a')[0].className)) {
+		this.enable('next');
+		this.enable('play');
+	}
+},
+enable: function(btn) {
+	if (!this.btn) return;
+	var sls = this, a = this.btn[btn].getElementsByTagName('a')[0], re = /disabled$/;
+	a.onclick = function() {
+		sls[btn]();
+		return false;
+	};
+	if (re.test(a.className)) a.className = a.className.replace(re, '');
+},
+disable: function(btn) {
+	if (!this.btn) return;
+	var a = this.btn[btn].getElementsByTagName('a')[0];
+	a.onclick = function() { return false; };
+	if (!/disabled$/.test(a.className)) a.className += ' disabled';
+},
+hitSpace: function() {
+	if (this.autoplay) this.pause();
+	else this.play();
+},
+play: function(wait) {
+	if (this.btn) {
+		this.btn.play.style.display = 'none';
+		this.btn.pause.style.display = '';
+	}
+	
+	this.autoplay = true;	
+	if (!wait) hs.next(this.expKey);
+},
+pause: function() {
+	if (this.btn) {
+		this.btn.pause.style.display = 'none';
+		this.btn.play.style.display = '';
+	}
+	
+	clearTimeout(this.autoplay);
+	this.autoplay = null;
+},
+previous: function() {
+	this.pause();
+	hs.previous(this.btn.previous);
+},
+next: function() {
+	this.pause();
+	hs.next(this.btn.next);
+},
+move: function() {},
+'full-expand': function() {
+	hs.getExpander().doFullExpand();
+},
+close: function() {
+	hs.close(this.btn.close);
+}
+};
+hs.Thumbstrip = function(slideshow) {
+	function add (exp) {
+		hs.extend(options || {}, {
+			overlayId: dom,
+			hsId: 'thumbstrip',
+			className: 'highslide-thumbstrip-'+ mode +'-overlay ' + (options.className || '')
+		});
+		if (hs.ieLt7) options.fade = 0;
+		exp.createOverlay(options);
+		hs.setStyles(dom.parentNode, { overflow: 'hidden' });
+	};
+	
+	function scroll (delta) {	
+		selectThumb(undefined, Math.round(delta * dom[isX ? 'offsetWidth' : 'offsetHeight'] * 0.7));
+	};
+	
+	function selectThumb (i, scrollBy) {
+		if (i === undefined) for (var j = 0; j < group.length; j++) {
+			if (group[j] == hs.expanders[slideshow.expKey].a) {
+				i = j;
+				break;
+			}
+		}
+		if (i === undefined) return;
+		var as = dom.getElementsByTagName('a'),
+			active = as[i],
+			cell = active.parentNode,
+			left = isX ? 'Left' : 'Top',
+			right = isX ? 'Right' : 'Bottom',
+			width = isX ? 'Width' : 'Height',
+			offsetLeft = 'offset' + left,
+			offsetWidth = 'offset' + width,
+			overlayWidth = div.parentNode.parentNode[offsetWidth],
+			minTblPos = overlayWidth - table[offsetWidth],
+			curTblPos = parseInt(table.style[isX ? 'left' : 'top']) || 0,
+			tblPos = curTblPos,
+			mgnRight = 20;
+		if (scrollBy !== undefined) {
+			tblPos = curTblPos - scrollBy;
+			
+			if (minTblPos > 0) minTblPos = 0;
+			if (tblPos > 0) tblPos = 0;
+			if (tblPos < minTblPos) tblPos = minTblPos;
+			
+	
+		} else {
+			for (var j = 0; j < as.length; j++) as[j].className = '';
+			active.className = 'highslide-active-anchor';
+			var activeLeft = i > 0 ? as[i - 1].parentNode[offsetLeft] : cell[offsetLeft],
+				activeRight = cell[offsetLeft] + cell[offsetWidth] + 
+					(as[i + 1] ? as[i + 1].parentNode[offsetWidth] : 0);
+			if (activeRight > overlayWidth - curTblPos) tblPos = overlayWidth - activeRight;
+			else if (activeLeft < -curTblPos) tblPos = -activeLeft;
+		}
+		var markerPos = cell[offsetLeft] + (cell[offsetWidth] - marker[offsetWidth]) / 2 + tblPos;
+		hs.animate(table, isX ? { left: tblPos } : { top: tblPos }, null, 'easeOutQuad');
+		hs.animate(marker, isX ? { left: markerPos } : { top: markerPos }, null, 'easeOutQuad');
+		scrollUp.style.display = tblPos < 0 ? 'block' : 'none';
+		scrollDown.style.display = (tblPos > minTblPos)  ? 'block' : 'none';
+		
+	};
+	
+
+	// initialize
+	var group = hs.anchors.groups[hs.expanders[slideshow.expKey].slideshowGroup || 'none'],
+		options = slideshow.thumbstrip,
+		mode = options.mode || 'horizontal',
+		floatMode = (mode == 'float'),
+		tree = floatMode ? ['div', 'ul', 'li', 'span'] : ['table', 'tbody', 'tr', 'td'],
+		isX = (mode == 'horizontal'),
+		dom = hs.createElement('div', {
+				className: 'highslide-thumbstrip highslide-thumbstrip-'+ mode,
+				innerHTML:
+					'<div class="highslide-thumbstrip-inner">'+
+					'<'+ tree[0] +'><'+ tree[1] +'></'+ tree[1] +'></'+ tree[0] +'></div>'+
+					'<div class="highslide-scroll-up"><div></div></div>'+
+					'<div class="highslide-scroll-down"><div></div></div>'+
+					'<div class="highslide-marker"><div></div></div>'
+			}, {
+				display: 'none'
+			}, hs.container),
+		domCh = dom.childNodes,
+		div = domCh[0],
+		scrollUp = domCh[1],
+		scrollDown = domCh[2],
+		marker = domCh[3],
+		table = div.firstChild,
+		tbody = dom.getElementsByTagName(tree[1])[0],
+		tr;
+	for (var i = 0; i < group.length; i++) {
+		if (i == 0 || !isX) tr = hs.createElement(tree[2], null, null, tbody);
+		(function(){
+			var a = group[i],
+				cell = hs.createElement(tree[3], null, null, tr),
+				pI = i;
+			hs.createElement('a', {
+				href: a.href,
+				onclick: function() {
+					hs.getExpander(this).focus();
+					return hs.transit(a);
+				},
+				innerHTML: hs.stripItemFormatter ? hs.stripItemFormatter(a) : a.innerHTML
+			}, null, cell);
+		})();
+	}
+	if (!floatMode) {
+		scrollUp.onclick = function () { scroll(-1); };
+		scrollDown.onclick = function() { scroll(1); };
+		hs.addEventListener(tbody, document.onmousewheel !== undefined ? 
+				'mousewheel' : 'DOMMouseScroll', function(e) {        
+			var delta = 0;
+	        e = e || window.event;
+	        if (e.wheelDelta) {
+				delta = e.wheelDelta/120;
+				if (hs.opera) delta = -delta;
+	        } else if (e.detail) {
+				delta = -e.detail/3;
+	        }
+	        if (delta) scroll(-delta * 0.2);
+			if (e.preventDefault) e.preventDefault();
+			e.returnValue = false;
+		});
+	}
+	
+	return {
+		add: add,
+		selectThumb: selectThumb
+	}
+};
+hs.langDefaults = hs.lang;
+// history
+var HsExpander = hs.Expander;
 if (hs.ie) {
 	(function () {
 		try {
@@ -2234,29 +3253,45 @@ if (hs.ie) {
 }
 hs.addEventListener(document, 'DOMContentLoaded', hs.ready);
 hs.addEventListener(window, 'load', hs.ready);
-hs.langDefaults = hs.lang;
-// history
-var HsExpander = hs.Expander;
 
 // set handlers
-hs.addEventListener(window, 'load', function() {
-	if (hs.expandCursor) {
-		var sel = '.highslide img', 
-			dec = 'cursor: url('+ hs.graphicsDir + hs.expandCursor +'), pointer !important;';
-			
+hs.addEventListener(document, 'ready', function() {
+	if (hs.expandCursor || hs.dimmingOpacity) {
 		var style = hs.createElement('style', { type: 'text/css' }, null, 
 			document.getElementsByTagName('HEAD')[0]);
-	
-		if (!hs.ie) {
-			style.appendChild(document.createTextNode(sel + " {" + dec + "}"));
-		} else {
-			var last = document.styleSheets[document.styleSheets.length - 1];
-			if (typeof(last.addRule) == "object") last.addRule(sel, dec);
+			
+		function addRule(sel, dec) {		
+			if (!hs.ie) {
+				style.appendChild(document.createTextNode(sel + " {" + dec + "}"));
+			} else {
+				var last = document.styleSheets[document.styleSheets.length - 1];
+				if (typeof(last.addRule) == "object") last.addRule(sel, dec);
+			}
 		}
+		function fix(prop) {
+			return 'expression( ( ( ignoreMe = document.documentElement.'+ prop +
+				' ? document.documentElement.'+ prop +' : document.body.'+ prop +' ) ) + \'px\' );';
+		}
+		if (hs.expandCursor) addRule ('.highslide img', 
+			'cursor: url('+ hs.graphicsDir + hs.expandCursor +'), pointer !important;');
+		addRule ('.highslide-viewport-size',
+			hs.ie && (hs.uaVersion < 7 || document.compatMode == 'BackCompat') ?
+				'position: absolute; '+
+				'left:'+ fix('scrollLeft') +
+				'top:'+ fix('scrollTop') +
+				'width:'+ fix('clientWidth') +
+				'height:'+ fix('clientHeight') :
+				'position: fixed; width: 100%; height: 100%; left: 0; top: 0');
 	}
 });
 hs.addEventListener(window, 'resize', function() {
 	hs.getPageSize();
+	if (hs.viewport) for (var i = 0; i < hs.viewport.childNodes.length; i++) {
+		var node = hs.viewport.childNodes[i],
+			exp = hs.getExpander(node);
+		exp.positionOverlay(node);
+		if (node.hsId == 'thumbstrip') exp.slideshow.thumbstrip.selectThumb();
+	}
 });
 hs.addEventListener(document, 'mousemove', function(e) {
 	hs.mouse = { x: e.clientX, y: e.clientY	};
@@ -2265,3 +3300,5 @@ hs.addEventListener(document, 'mousedown', hs.mouseClickHandler);
 hs.addEventListener(document, 'mouseup', hs.mouseClickHandler);
 hs.addEventListener(document, 'ready', hs.setClickEvents);
 hs.addEventListener(window, 'load', hs.preloadImages);
+hs.addEventListener(window, 'load', hs.preloadAjax);
+}

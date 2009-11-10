@@ -26,6 +26,10 @@ table#kpg-albums td div.kpg-location {
 	font-style: italic;
 }
 
+/* the album's published timestamp */
+table#kpg-albums td div.kpg-published {
+}
+
 /* the number of photos in the album */
 table#kpg-albums td div.kpg-nbPhotos {
 	margin-top: 15px;
@@ -50,7 +54,6 @@ div#kpg-backLink {
 }
 
 
-
 /* the box with the album description */
 div#kpg-album-description {
 	padding: 10px;
@@ -73,10 +76,14 @@ div#kpg-album-description div#kpg-location {
 	font-style: italic;
 }
 
-/* the number of photos in the album */
-div#kpg-album-description div#kpg-nbPhotos {
+/* the album's published timestamp */
+div#kpg-album-description div#kpg-published {
 }
 
+/* the number of photos in the album */
+div#kpg-album-description div#kpg-nbPhotos {
+	margin-top: 15px;
+}
 
 
 /* table cell containing he picture + caption */

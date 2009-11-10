@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.2.2
+Version: 0.2.3
 Author: Guillaume Hébert
 
 Version History
@@ -59,10 +59,23 @@ Version History
 						Analytics for WordPress" plugin, kPicasa is now loaded
 						earlier (priority 9 instead of 10). Added dirname()
 						to the kpg.class.php require_once() call.
+2009-11-10	0.2.3		Fixed a HTML validation problem. The date can now be
+						shown, but it's hidden by default in the CSS file. Now
+						including CSS files with wp_enqueue_style(). Fixed a bug
+						where my version of Thickbox was always called. Now
+						calling SWFObject with the standard mechanism. Moved the
+						configuration sub-menu under the Plugins menu. Made
+						the plugin ready to be translated ( _e() and __() ).
+						Enabled embedded videos for Thickbox. Added Shadowbox.
+						Added slideshow to Highslide.
+
+Todo
+---------------------------------------------------------------------------
+- Multiple private albums, can it be done without too much trouble?
 
 Licence
 ---------------------------------------------------------------------------
-    Copyright 2007, 2008, 2009  Guillaume Hébert  (email : kag@boloxe.com)
+    Copyright 2007, 2008, 2009  Guillaume Hébert (email : kag@boloxe.com)
 
     This program is free software; you can redistribute it and/or modify
     it under the terms of the GNU General Public License as published by
@@ -84,6 +97,14 @@ if ( version_compare(PHP_VERSION, '5.0.0', '<') )
 	print 'kPicasa Gallery requires PHP version 5 or greater. You are running PHP version '.PHP_VERSION;
 	exit;
 }
+if ( !function_exists('add_action') || !function_exists('add_action')
+  || !function_exists('add_filter') || !function_exists('wp_enqueue_script')
+  || !function_exists('wp_enqueue_script') )
+{
+	print '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('Error: Your WordPress installation is missing some required functions. Please upgrade your WordPress installation.', 'kpicasa_gallery');
+	exit;
+}
+
 if ( !defined('KPICASA_GALLERY_DIR') )
 {
 	if ( defined('WP_PLUGIN_URL') )
@@ -99,98 +120,97 @@ if ( !defined('KPICASA_GALLERY_FILTER_PRIORITY') )
 {
 	define('KPICASA_GALLERY_FILTER_PRIORITY', 9);
 }
+if ( !defined('KPICASA_GALLERY_VERSION') )
+{
+	define('KPICASA_GALLERY_VERSION', '0.2.3');
+}
 
 $kpg_picEngine = get_option( 'kpg_picEngine' );
 
-if ( function_exists('is_admin') )
+if ( !is_admin() )
 {
-	if ( !is_admin() )
-	{
-		if ( function_exists('add_action') )
-		{
-			add_action('wp_head', 'initKPicasaGallery');
-		}
-		if ( function_exists('add_filter') )
-		{
-			add_filter('the_content', 'loadKPicasaGallery', KPICASA_GALLERY_FILTER_PRIORITY);
-		}
+	add_action('wp_head', 'initKPicasaGallery');
+	add_filter('the_content', 'loadKPicasaGallery', KPICASA_GALLERY_FILTER_PRIORITY);
 
-		if ( function_exists('wp_enqueue_script') )
-		{
-			if ( $kpg_picEngine == 'highslide' )
-			{
-				wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array(), '4.1.2');
-			}
-			elseif ( $kpg_picEngine == 'lightbox' )
-			{
-				wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects', 'scriptaculous-builder'), '2.04');
-			}
-			elseif ( $kpg_picEngine == 'slimbox2' )
-			{
-				wp_enqueue_script('slimbox2', KPICASA_GALLERY_DIR.'/slimbox2/js/slimbox2.js', array('jquery'), '2.02');
-			}
-			elseif ( $kpg_picEngine == 'thickbox' )
-			{
-				wp_enqueue_script('thickbox');
-			}
-		}
-	}
-	else
+	wp_enqueue_style('kpicasa', KPICASA_GALLERY_DIR.'/kpicasa_gallery.css', false, KPICASA_GALLERY_VERSION, 'screen');
+
+	if ( $kpg_picEngine == 'highslide' )
 	{
-		if ( function_exists('add_action') )
+
+		$highslide_version = '4.1.8';
+		wp_enqueue_script('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.js', array('swfobject'), $highslide_version);
+		wp_enqueue_style('highslide', KPICASA_GALLERY_DIR.'/highslide/highslide.css', false, $highslide_version, 'screen');
+
+		// really it should be "if < IE7", but I'm too lazy
+		// Based on: http://www.useragentstring.com/pages/Internet%20Explorer/
+		if ( strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.') !== false )
 		{
-			add_action('admin_menu', 'adminKPicasaGallery');
+			wp_enqueue_style('highslide-ie6', KPICASA_GALLERY_DIR.'/highslide/highslide-styles-ie6.css', false, $highslide_version, 'screen');
 		}
 	}
+	elseif ( $kpg_picEngine == 'lightbox' )
+	{
+		$lightbox_version = '2.04';
+		wp_enqueue_script('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/js/lightbox.js', array('prototype', 'scriptaculous-effects', 'scriptaculous-builder'), $lightbox_version);
+		wp_enqueue_style('lightbox2', KPICASA_GALLERY_DIR.'/lightbox2/css/lightbox.css', false, $lightbox_version, 'screen');
+	}
+	elseif ( $kpg_picEngine == 'slimbox2' )
+	{
+		$slimbox2_version = '2.02';
+		wp_enqueue_script('slimbox2', KPICASA_GALLERY_DIR.'/slimbox2/js/slimbox2.js', array('jquery'), $slimbox2_version);
+		wp_enqueue_style('slimbox2', KPICASA_GALLERY_DIR.'/slimbox2/css/slimbox2.css', false, $slimbox2_version, 'screen');
+	}
+	elseif ( $kpg_picEngine == 'thickbox' )
+	{
+		wp_enqueue_script('thickbox');
+		wp_enqueue_style('thickbox', get_bloginfo('wpurl').'/wp-includes/js/thickbox/thickbox.css', false, false, 'screen');
+	}
+	elseif ( $kpg_picEngine == 'shadowbox' )
+	{
+		$shadowbox_version = '3.0rc1';
+		wp_enqueue_script('shadowbox', KPICASA_GALLERY_DIR.'/shadowbox/shadowbox.js', array('jquery', 'swfobject'), $shadowbox_version);
+		wp_enqueue_style('shadowbox', KPICASA_GALLERY_DIR.'/shadowbox/shadowbox.css', false, $shadowbox_version, 'screen');
+	}
+}
+else
+{
+	add_action('admin_menu', 'adminKPicasaGallery');
 }
 
 function initKPicasaGallery()
 {
 	global $kpg_picEngine;
 
-	print "<link rel='stylesheet' href='".KPICASA_GALLERY_DIR."/kpicasa_gallery.css' type='text/css' media='screen' />\n";
-
 	if ( $kpg_picEngine == 'highslide' )
 	{
 		$picEngineDir = KPICASA_GALLERY_DIR.'/highslide';
-		print "<link rel='stylesheet' href='$picEngineDir/highslide.css' type='text/css' media='screen' />\n";
-		print "<link rel='stylesheet' href='$picEngineDir/kpicasa.css' type='text/css' media='screen' />\n";
-		print "<!--[if lt IE 7]>\n";
-		print "<link rel='stylesheet' type='text/css' href='$picEngineDir/highslide-styles-ie6.css' />\n";
-		print "<![endif]-->\n";
-
-		print "<script type='text/javascript' src='".KPICASA_GALLERY_DIR."/swfobject.js'></script>\n";
 
 		print "<script type='text/javascript'>\n";
-		print "	hs.graphicsDir      = '$picEngineDir/graphics/';\n";
-		print "	hs.showCredits      = false;\n";
-		print "	hs.outlineType      = 'rounded-white';\n";
-		print "	hs.wrapperClassName = 'highslide-white';\n";
-		print "	if (hs.registerOverlay) {\n";
-			print "		hs.registerOverlay({ thumbnailId: null, overlayId: 'controlbar', position: 'top right', hideOnMouseOut: true });\n";
-		print "	}\n";
+		print "	hs.graphicsDir = '$picEngineDir/graphics/';\n";
+		print "	hs.align       = 'center';\n";
+		print "	hs.transitions = ['expand', 'crossfade'];\n";
+		print "	hs.outlineType = 'rounded-white';\n";
+		print "	hs.showCredits = false;\n";
+		print "	hs.fadeInOut   = true;\n";
+		print "	hs.addSlideshow({ interval: 5000, repeat: false, useControls: true, fixedControls: 'fit', overlayOptions: { opacity: .75, position: 'bottom center', hideOnMouseOut: true } });\n";
 		print "</script>\n";
 	}
 	elseif ( $kpg_picEngine == 'lightbox' )
 	{
 		$picEngineDir = KPICASA_GALLERY_DIR.'/lightbox2';
-		print "<link rel='stylesheet' href='$picEngineDir/css/lightbox.css' type='text/css' media='screen' />\n";
 
 		print "<script type='text/javascript'>\n";
 		print "	LightboxOptions.fileLoadingImage        = '$picEngineDir/images/loading.gif';\n";
 		print "	LightboxOptions.fileBottomNavCloseImage = '$picEngineDir/images/closelabel.gif';\n";
 		print "</script>\n";
 	}
-	elseif ( $kpg_picEngine == 'slimbox2' )
+	elseif ( $kpg_picEngine == 'shadowbox' )
 	{
-		$picEngineDir = KPICASA_GALLERY_DIR.'/slimbox2';
-		print "<link rel='stylesheet' href='$picEngineDir/css/slimbox2.css' type='text/css' media='screen' />\n";
-	}
-	elseif ( $kpg_picEngine == 'thickbox' )
-	{
-		$picEngineDir = KPICASA_GALLERY_DIR.'/thickbox';
-		$picEngineDir = "http://www.boloxe.com/blog/wp-includes/js/thickbox";
-		print "<link rel='stylesheet' href='$picEngineDir/thickbox.css' type='text/css' media='screen' />\n";
+		$picEngineDir = KPICASA_GALLERY_DIR.'/shadowbox';
+
+		print "<script type='text/javascript'>\n";
+		print "	Shadowbox.init();\n";
+		print "</script>\n";
 	}
 }
 
@@ -238,10 +258,13 @@ function loadKPicasaGallery ( $content = '' )
 
 function adminKPicasaGallery()
 {
-	if ( function_exists('add_options_page') )
+	if ( !function_exists('add_submenu_page') )
 	{
-		add_options_page('kPicasa Gallery Plugin Options', 'kPicasa Gallery', 8, dirname(__FILE__).'/param.php');
+		print '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('Error: Your WordPress installation is missing some required functions. Please upgrade your WordPress installation.', 'kpicasa_gallery');
+		exit;
 	}
+
+	add_submenu_page('plugins.php', 'kPicasa Gallery Plugin Options', 'kPicasa Gallery', 'manage_options', dirname(__FILE__).'/param.php');
 }
 
 ?>

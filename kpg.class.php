@@ -12,6 +12,10 @@ if ( !class_exists('KPicasaGallery') )
 		private $nbAlbumsPerPage;
 		private $nbAlbumsPerRow;
 		private $albumThumbSize;
+		private $albumSummary;
+		private $albumLocation;
+		private $albumPublished;
+		private $albumNbPhoto;
 
 		private $nbPhotosPerPage;
 		private $nbPhotosPerRow;
@@ -27,6 +31,10 @@ if ( !class_exists('KPicasaGallery') )
 			$this->nbAlbumsPerPage = get_option( 'kpg_albumPerPage' );
 			$this->nbAlbumsPerRow  = get_option( 'kpg_albumPerRow' );
 			$this->albumThumbSize  = get_option( 'kpg_albumThumbSize' );
+			$this->albumSummary    = get_option( 'kpg_albumSummary' );
+			$this->albumLocation   = get_option( 'kpg_albumLocation' );
+			$this->albumPublished  = get_option( 'kpg_albumPublished' );
+			$this->albumNbPhoto    = get_option( 'kpg_albumNbPhoto' );
 
 			$this->nbPhotosPerPage = get_option( 'kpg_photoPerPage' );
 			$this->nbPhotosPerRow  = get_option( 'kpg_photoPerRow' );
@@ -34,7 +42,7 @@ if ( !class_exists('KPicasaGallery') )
 
 			if ( !strlen( $this->username ) )
 			{
-				if ( $this->checkError( new WP_Error('kpicasa_gallery-username-required', "<strong>Error:</strong> you must go to the admin section and set your Picasa Web Album Username in the Options section.") ) )
+				if ( $this->checkError( new WP_Error('kpicasa_gallery-username-required', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('You must go to the admin section and set your Picasa Web Album Username in the Options section.', 'kpicasa_gallery') ) ) )
 				{
 					return false;
 				}
@@ -56,6 +64,22 @@ if ( !class_exists('KPicasaGallery') )
 			if ( intval( $this->nbPhotosPerRow ) < 1 )
 			{
 				$this->nbPhotosPerRow = 2;
+			}
+			if ( $this->albumSummary === null )
+			{
+				$this->albumSummary = 1;
+			}
+			if ( $this->albumLocation === null )
+			{
+				$this->albumLocation = 1;
+			}
+			if ( $this->albumPublished === null )
+			{
+				$this->albumPublished = 1;
+			}
+			if ( $this->albumNbPhoto === null )
+			{
+				$this->albumNbPhoto = 1;
 			}
 
 			if ( count($this->showOnlyAlbums) == 1 || (isset($_GET['album']) && strlen($_GET['album'])) )
@@ -96,7 +120,7 @@ if ( !class_exists('KPicasaGallery') )
 			$data = wp_cache_get('kPicasaGallery', 'kPicasaGallery');
 			if ( false === $data )
 			{
-				$url  = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."?kind=album";
+				$url  = 'http://picasaweb.google.com/data/feed/api/user/'.urlencode($this->username).'?kind=album';
 				$data = $this->fetch($url);
 				if ( is_wp_error($data) )
 				{
@@ -109,7 +133,7 @@ if ( !class_exists('KPicasaGallery') )
 			$xml = @simplexml_load_string($data);
 			if ( $xml === false )
 			{
-				return new WP_Error( 'kpicasa_gallery-invalid-response', "<strong>Error:</strong> the communication with Picasa Web Albums didn't go as expected. Here's what Picasa Web Albums said:<br /><br />".$data );
+				return new WP_Error( 'kpicasa_gallery-invalid-response', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('the communication with Picasa Web Albums didn\'t go as expected. Here\'s what Picasa Web Albums said', 'kpicasa_gallery').':<br /><br />'.$data );
 			}
 
 			//----------------------------------------
@@ -166,11 +190,12 @@ if ( !class_exists('KPicasaGallery') )
 					$title     = wp_specialchars( (string) $album->title );
 					$summary   = wp_specialchars( (string) $album->summary );
 					$location  = wp_specialchars( (string) $album->gphoto_location );
+					$published = wp_specialchars( date('Y-m-d', strtotime( $album->published ))); // that way it keeps the timezone
 					$nbPhotos  = (string) $album->gphoto_numphotos;
 					$albumURL  = add_query_arg('album', $name, $url);
 					$thumbURL  = (string) $album->media_group->media_thumbnail['url'];
-					$thumbH    = (string) $album->media_group->media_thumbnail['height'];
 					$thumbW    = (string) $album->media_group->media_thumbnail['width'];
+					$thumbH    = (string) $album->media_group->media_thumbnail['height'];
 
 					if ( $this->albumThumbSize != false && $this->albumThumbSize != 160 )
 					{
@@ -181,15 +206,22 @@ if ( !class_exists('KPicasaGallery') )
 
 					print "<a href='$albumURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $title)."' class='kpg-thumb $class' /></a>";
 					print "<div class='kpg-title'><a href='$albumURL'>$title</a></div>";
-					if ( strlen($summary) )
+					if ( $this->albumSummary == 1 && strlen($summary) )
 					{
 						print "<div class='kpg-summary'>$summary</div>";
 					}
-					if ( strlen($location) )
+					if ( $this->albumLocation == 1 && strlen($location) )
 					{
 						print "<div class='kpg-location'>$location</div>";
 					}
-					print "<div class='kpg-nbPhotos'>$nbPhotos photo".($nbPhotos > 1 ? 's' : '').'</div>';
+					if ( $this->albumPublished == 1 )
+					{
+						print "<div class='kpg-published'>$published</div>";
+					}
+					if ( $this->albumNbPhoto == 1 )
+					{
+						print '<div class="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $nbPhotos, 'kpicasa_gallery'), $nbPhotos).'</div>';
+					}
 					print '</td>';
 					$j++;
 				}
@@ -208,7 +240,7 @@ if ( !class_exists('KPicasaGallery') )
 
 			print '</tr>';
 			print '</table>';
-			print '<div style="clear: both;" />&nbsp;</div>';
+			print '<br style="clear: both;" />';
 
 			//----------------------------------------
 			// Paginator
@@ -226,7 +258,7 @@ if ( !class_exists('KPicasaGallery') )
 			$data = wp_cache_get('kPicasaGallery_'.$album, 'kPicasaGallery');
 			if ( false === $data )
 			{
-				$url = "http://picasaweb.google.com/data/feed/api/user/".urlencode($this->username)."/album/".urlencode($album)."?kind=photo";
+				$url = 'http://picasaweb.google.com/data/feed/api/user/'.urlencode($this->username).'/album/'.urlencode($album).'?kind=photo';
 				if ( strlen($authKey) > 0 )
 				{
 					$url .= '&authkey='.$authKey;
@@ -243,7 +275,7 @@ if ( !class_exists('KPicasaGallery') )
 			$xml = @simplexml_load_string($data);
 			if ( $xml === false )
 			{
-				return new WP_Error( 'kpicasa_gallery-invalid-response', __("<strong>Error:</strong> the communication with Picasa Web Albums didn't go as expected. Here's what Picasa Web Albums said:<br /><br /> ".$data) );
+				return new WP_Error( 'kpicasa_gallery-invalid-response', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('the communication with Picasa Web Albums didn\'t go as expected. Here\'s what Picasa Web Albums said', 'kpicasa_gallery').':<br /><br />'.$data );
 			}
 
 			//----------------------------------------
@@ -253,42 +285,37 @@ if ( !class_exists('KPicasaGallery') )
 			{
 				$backURL = remove_query_arg('album');
 				$backURL = remove_query_arg('kpap', $backURL);
-				print "<div id='kpg-backLink'><a href='$backURL'>&laquo; Back to album list</a></div>";
+				print "<div id='kpg-backLink'><a href='$backURL'>&laquo; ".__('Back to album list', 'kpicasa_gallery').'</a></div>';
 			}
 
 			//----------------------------------------
 			// Display album information
 			//----------------------------------------
-			$albumTitle    = wp_specialchars( (string) $xml->title );
-			$albumSummary  = wp_specialchars( (string) $xml->subtitle );
-			$albumLocation = wp_specialchars( (string) $xml->gphoto_location );
-			$albumNbPhotos = (string) $xml->gphoto_numphotos;
+			$albumTitle     = wp_specialchars( (string) $xml->title );
+			$albumSummary   = wp_specialchars( (string) $xml->subtitle );
+			$albumLocation  = wp_specialchars( (string) $xml->gphoto_location );
+			//$albumPublished = wp_specialchars( date('Y-m-d', strtotime( $xml->published ))); // that way it keeps the timezone
+			$albumNbPhotos  = (string) $xml->gphoto_numphotos;
 
 			print '<div id="kpg-album-description">';
 			print "<div id='kpg-title'>$albumTitle</div>";
-			if ( strlen($albumSummary) )
+			if ( $this->albumSummary == 1 && strlen($albumSummary) )
 			{
 				print "<div id='kpg-summary'>$albumSummary</div>";
 			}
-			if ( strlen($albumLocation) )
+			if ( $this->albumLocation == 1 && strlen($albumLocation) )
 			{
 				print "<div id='kpg-location'>$albumLocation</div>";
 			}
-			print "<div id='kpg-nbPhotos'>$albumNbPhotos photo".($albumNbPhotos > 1 ? 's' : '').'</div>';
-			print '</div>';
-
-			//----------------------------------------
-			// Prepare Highslide if needed
-			//----------------------------------------
-			if ( $this->picEngine == 'highslide' )
+			if ( $this->albumPublished == 1 )
 			{
-				print '<div id="controlbar" class="highslide-overlay controlbar">';
-				print '<a href="#" class="previous" onclick="return hs.previous(this)" title="Previous (left arrow key)"></a>';
-				print '<a href="#" class="next" onclick="return hs.next(this)" title="Next (right arrow key)"></a>';
-				print '<a href="#" class="highslide-move" onclick="return false" title="Click and drag to move"></a>';
-				print '<a href="#" class="close" onclick="return hs.close(this)" title="Close"></a>';
-				print '</div>';
+				//print "<div id='kpg-published'>$albumPublished</div>";
 			}
+			if ( $this->albumNbPhoto == 1 )
+			{
+				print '<div id="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $albumNbPhotos, 'kpicasa_gallery'), $albumNbPhotos).'</div>';
+			}
+			print '</div>';
 
 			//----------------------------------------
 			// Prepare some variables
@@ -344,32 +371,24 @@ if ( !class_exists('KPicasaGallery') )
 
 					$summary  = wp_specialchars( (string) $photo->summary );
 					$thumbURL = (string) $photo->media_group->media_thumbnail[$thumbIndex]['url'];
-					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
 					$thumbW   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['width'];
+					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
 
 					if ( $isVideo == true )
 					{
+						$fullURL     = (string) $photo->media_group->media_content[1]['url'];
+						$fullURL     = 'http://video.google.com/googleplayer.swf?videoUrl='.urlencode($fullURL).'&autoplay=yes';
+						$videoWidth  = (string) $photo->media_group->media_content[0]['width'];
+						$videoHeight = (string) $photo->media_group->media_content[0]['height'];
 
 						if ( $this->picEngine == 'highslide' )
 						{
-							$fullURL     = (string) $photo->media_group->media_content[1]['url'];
-							$fullURL     = urlencode( $fullURL );
-							$videoHeight = (string) $photo->media_group->media_content[0]['height'];
-							$videoWidth  = (string) $photo->media_group->media_content[0]['width'];
-
 							$onclick  = "onclick='return hs.htmlExpand(this, ";
 							$onclick .= "{ objectType: \"swf\", ";
-							$onclick .= "swfOptions: { ";
-							$onclick .= "flashvars: { file: \"&type=video&file=$fullURL&backcolor=000000&frontcolor=ffffff&lightcolor=555555&screencolor=000000&screencolor=000000&stretching=fill\", autostart: \"true\" }, ";
-							$onclick .= "version: \"8\", ";
-							$onclick .= "params:  { allowscriptaccess: \"always\", allowfullscreen: \"true\", vmode: \"transparent\" } ";
-							$onclick .= "}, ";
-							$onclick .= "width: $videoWidth, objectWidth: $videoWidth, objectHeight: $videoHeight, ";
+							$onclick .= "width: $videoWidth, height: ".(75 + $videoHeight).", objectWidth: $videoWidth, objectHeight: $videoHeight, ";
 							$onclick .= "wrapperClassName: \"draggable-header no-footer\", ";
-							$onclick .= "allowSizeReduction: false, preserveContent: false, dimmingGeckoFix: true, ";
-							$onclick .= "maincontentText: \"You need to upgrade your Flash player\" } )'";
-
-							$fullURL = KPICASA_GALLERY_DIR.'/player.swf';
+							$onclick .= "allowSizeReduction: false, preserveContent: false, ";
+							$onclick .= "maincontentText: \"".__('You need to upgrade your Flash player', 'kpicasa_gallery')."\" } )'";
 
 							if ( strlen($summary) )
 							{
@@ -380,6 +399,46 @@ if ( !class_exists('KPicasaGallery') )
 							else
 							{
 								print "<a href='$fullURL' $onclick class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
+							}
+						}
+						elseif ( $this->picEngine == 'thickbox' || $this->picEngine == 'shadowbox' )
+						{
+							if ( $this->picEngine == 'thickbox' )
+							{
+								print '<div id="kpicasa_gallery_video_'.$i.'" style="display: none;">'."\n";
+								print '	<object classid="clsid:D27CDB6E-AE6D-11cf-96B8-444553540000" width="'.$videoWidth.'" height="'.$videoHeight.'" id="kpg_'.$i.'">'."\n";
+								print '		<param name="movie" value="'.$fullURL.'" />'."\n";
+								if ( strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') === false )
+								{
+									print '		<object type="application/x-shockwave-flash" data="'.$fullURL.'" width="'.$videoWidth.'" height="'.$videoHeight.'">'."\n";
+								}
+								print '			<a href="http://www.adobe.com/go/getflashplayer">'."\n";
+								print '			<img src="http://www.adobe.com/images/shared/download_buttons/get_flash_player.gif" alt="Get Adobe Flash player" />'."\n";
+								print '			</a>'."\n";
+								if ( strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE') === false )
+								{
+									print '		</object>'."\n";
+								}
+								print '	</object>'."\n";
+								print '</div>'."\n";
+
+								// foo=bar because of a Thickbox bug: http://groups.google.com/group/jquery-plugins/browse_thread/thread/079abdf9b068ddce?pli=1
+								$fullURL = '#TB_inline?foo=bar&height='.(5 + $videoHeight).'&width='.$videoWidth.'&inlineId=kpicasa_gallery_video_'.$i;
+								$markup = "class='thickbox' rel='kpicasa_gallery'";
+							}
+							elseif ( $this->picEngine == 'shadowbox' )
+							{
+								$markup = "rel='shadowbox[kpicasa_gallery];height=$videoHeight;width=$videoWidth'";
+							}
+
+							if ( strlen($summary) )
+							{
+								print "<a href='$fullURL' title='".str_replace("'", "&#39;", $summary)."' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
+								print "<div class='kpg-summary'>$summary</div>";
+							}
+							else
+							{
+								print "<a href='$fullURL' $markup><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
 							}
 						}
 						else
@@ -415,7 +474,7 @@ if ( !class_exists('KPicasaGallery') )
 								print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
 							}
 						}
-						elseif ( $this->picEngine == 'lightbox' || $this->picEngine == 'slimbox2' || $this->picEngine == 'thickbox' )
+						elseif ( $this->picEngine == 'lightbox' || $this->picEngine == 'slimbox2' || $this->picEngine == 'thickbox' || $this->picEngine == 'shadowbox' )
 						{
 							if ( $this->picEngine == 'lightbox' )
 							{
@@ -428,6 +487,10 @@ if ( !class_exists('KPicasaGallery') )
 							elseif ( $this->picEngine == 'thickbox' )
 							{
 								$markup = "class='thickbox' rel='kpicasa_gallery'";
+							}
+							elseif ( $this->picEngine == 'shadowbox' )
+							{
+								$markup = "rel='shadowbox[kpicasa_gallery]'";
 							}
 
 							if ( strlen($summary) )
@@ -471,7 +534,7 @@ if ( !class_exists('KPicasaGallery') )
 
 			print '</tr>';
 			print '</table>';
-			print '<div style="clear: both;" />&nbsp;</div>';
+			print '<br style="clear: both;" />';
 
 			//----------------------------------------
 			// Paginator
@@ -498,17 +561,17 @@ if ( !class_exists('KPicasaGallery') )
 						$url = add_query_arg($key, $value, $url);
 					}
 
-					print '<div id="kpg-paginator">Page:&nbsp;&nbsp;';
+					print '<div id="kpg-paginator">'.__('Page', 'kpicasa_gallery').':&nbsp;&nbsp;';
 					for($i = 1; $i <= $nbPage; $i++)
 					{
-						$pageUrl = add_query_arg($argName, $i, $url);
+						$pageURL = add_query_arg($argName, $i, $url);
 						if ($i == $page)
 						{
 							print " <span class='kpg-on'>$i</span>";
 						}
 						else
 						{
-							print " <a href='$pageUrl'>$i</a>";
+							print " <a href='$pageURL'>$i</a>";
 						}
 					}
 					print '</div>';
@@ -547,19 +610,19 @@ if ( !class_exists('KPicasaGallery') )
 
 			if ($fopen_failed && $curl_failed)
 			{
-				return new WP_Error( 'kpicasa_gallery-cant-open-url', __("<strong>Error:</strong> your PHP configuration reports that it allows kPicasa Gallery to connect to Picasa Web Albums, but in fact it seems your web host is blocking outgoing requests. Please ask your administrator to allow outgoing requests via file_get_contents() or cURL.") );
+				return new WP_Error( 'kpicasa_gallery-cant-open-url', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('your PHP configuration reports that it allows kPicasa Gallery to connect to Picasa Web Albums, but in fact it seems your web host is blocking outgoing requests. Please ask your administrator to allow outgoing requests via file_get_contents() or cURL.', 'kpicasa_gallery') );
 			}
 			elseif ($fopen_failed)
 			{
-				return new WP_Error( 'kpicasa_gallery-cant-open-url', __("<strong>Error:</strong> kPicasa Gallery tried to connect to Picasa Web Albums using file_get_contents() and failed. Your web host is probably blocking outgoing requests.") );
+				return new WP_Error( 'kpicasa_gallery-cant-open-url', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('kPicasa Gallery tried to connect to Picasa Web Albums using file_get_contents() and failed. Your web host is probably blocking outgoing requests.', 'kpicasa_gallery') );
 			}
 			elseif ($curl_failed)
 			{
-				return new WP_Error( 'kpicasa_gallery-cant-open-url', __("<strong>Error:</strong> kPicasa Gallery tried to connect to Picasa Web Albums using cURL and failed. Your web host is probably blocking outgoing requests.") );
+				return new WP_Error( 'kpicasa_gallery-cant-open-url', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('kPicasa Gallery tried to connect to Picasa Web Albums using cURL and failed. Your web host is probably blocking outgoing requests.', 'kpicasa_gallery') );
 			}
 			else
 			{
-				return new WP_Error( 'kpicasa_gallery-cant-open-url', __("<strong>Error:</strong> your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable allow_url_fopen or cURL.") );
+				return new WP_Error( 'kpicasa_gallery-cant-open-url', '<strong>'.__('Error', 'kpicasa_gallery').':</strong> '.__('your PHP configuration does not allow kPicasa Gallery to connect to Picasa Web Albums. Please ask your administrator to enable allow_url_fopen or cURL.', 'kpicasa_gallery') );
 			}
 		}
 
