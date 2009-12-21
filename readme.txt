@@ -17,8 +17,8 @@ Picasa Web Gallery server.
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache
 mechanism.
 
-You have to choice of using either Highslide, Lightbox, Slimbox or Thickbox for
-displaying the large version of your photos.
+You have to choice of using either Highslide, Lightbox, Slimbox, Thickbox or
+Fancybox for displaying the large version of your photos.
 
 Highslide supports playing videos directly from your site. Selecting another
 engine will open a new window to the original Picasa URL.
