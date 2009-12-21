@@ -20,8 +20,8 @@ mechanism.
 You have to choice of using either Highslide, Lightbox, Slimbox, Thickbox or
 Fancybox for displaying the large version of your photos.
 
-Highslide supports playing videos directly from your site. Selecting another
-engine will open a new window to the original Picasa URL.
+Highslide and Slimbox support playing videos directly from your site. Selecting
+another engine will open a new window to the original Picasa URL.
 
 == Installation ==
 
