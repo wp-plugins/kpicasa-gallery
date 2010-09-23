@@ -1,7 +1,7 @@
 === kPicasa Gallery ===
 Tags: picasa, gallery, photo
 Requires at least: 2.2
-Tested up to: 2.9
+Tested up to: 3.0
 Stable tag: trunk
 
 Display your Picasa Web Galleries in a post or in a page.
