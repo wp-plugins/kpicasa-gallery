@@ -153,7 +153,7 @@ if ( !class_exists('KPicasaGallery') )
 				$thumbW    = (string) $album->media_group->media_thumbnail['width'];
 				$thumbH    = (string) $album->media_group->media_thumbnail['height'];
 
-				if ( $this->config['albumThumbSize'] != false && $this->config['albumThumbSize'] != 160 )
+				if ( $this->config['albumThumbSize'] != null && $this->config['albumThumbSize'] != 160 )
 				{
 					$thumbURL = str_replace('/s160-c/', '/s'.$this->config['albumThumbSize'].'-c/', $thumbURL);
 					$thumbH   = round( ($this->config['albumThumbSize'] / $thumbH) * $thumbH );
@@ -271,7 +271,7 @@ if ( !class_exists('KPicasaGallery') )
 			{
 				print '<div id="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $albumNbPhotos, 'kpicasa_gallery'), $albumNbPhotos).'</div>';
 			}
-			if ( $this->config['albumNbPhoto'] == 1 )
+			if ( $this->config['albumSlideshow'] == 1 )
 			{
 				print "<div id='kpg-slideshow'><a href='$albumSlideshow'>".__('Slideshow', 'kpicasa_gallery')."</a></div>";
 			}
@@ -427,7 +427,14 @@ if ( !class_exists('KPicasaGallery') )
 					else
 					{
 						$fullURL = (string) $photo->media_group->media_thumbnail[1]['url'];
-						$fullURL = str_replace('/s144/', '/s800/', $fullURL);
+						if ( $this->config['photoSize'] != null )
+						{
+							$fullURL = str_replace('/s144/', '/s'.$this->config['photoSize'].'/', $fullURL);
+						}
+						else
+						{
+							$fullURL = str_replace('/s144/', '/s800/', $fullURL);
+						}
 
 						if ( $this->config['picEngine'] == 'highslide' )
 						{

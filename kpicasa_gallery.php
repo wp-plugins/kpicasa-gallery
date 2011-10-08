@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.2.5
+Version: 0.2.6
 Author: Guillaume Hébert
 
 Version History
@@ -239,6 +239,7 @@ function kpicasa_gallery_config_sanitize($input)
 	$input['photoPerPage']   = absint( $input['photoPerPage'] );
 	$input['photoPerRow']    = absint( $input['photoPerRow'] );
 	$input['photoThumbSize'] = absint( $input['photoThumbSize'] );
+	$input['photoSize']      = absint( $input['photoSize'] );
 	$input['albumSlideshow'] = $input['albumSlideshow'] == 1 ? 1 : 0;
 	$input['showGooglePlus'] = $input['showGooglePlus'] == 1 ? 1 : 0;
 
@@ -246,13 +247,17 @@ function kpicasa_gallery_config_sanitize($input)
 	{
 		$input['picEngine'] = 'highslide';
 	}
-	if ( !in_array($input['albumThumbSize'], array(32, 48, 64, 72, 144, 160)) )
+	if ( !in_array($input['albumThumbSize'], array(32, 48, 64, 72, 104, 144, 150, 160)) )
 	{
 		$input['albumThumbSize'] = 160;
 	}
-	if ( !in_array($input['photoThumbSize'], array(72, 144, 288)) )
+	if ( !in_array($input['photoThumbSize'], array(32, 48, 64, 72, 104, 144, 150, 160)) )
 	{
 		$input['photoThumbSize'] = 160;
+	}
+	if ( !in_array($input['photoSize'], array(94, 110, 128, 200, 220, 288, 320, 400, 512, 576, 640, 720, 800, 912, 1024, 1152, 1280, 1440, 1600)) )
+	{
+		$input['photoSize'] = 800;
 	}
 	if ( $input['albumPerRow'] == 0 )
 	{

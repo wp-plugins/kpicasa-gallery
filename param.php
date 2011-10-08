@@ -18,7 +18,9 @@ $config['photoPerPage']   = $config['photoPerPage'] > 0 ? $config['photoPerPage'
 $config['dateFormat']     = $config['dateFormat'] != null ? $config['dateFormat'] : 'Y-m-d';
 $config['albumThumbSize'] = $config['albumThumbSize'] != null ? $config['albumThumbSize'] : 160;
 $config['photoThumbSize'] = $config['photoThumbSize'] != null ? $config['photoThumbSize'] : 144;
+$config['photoSize']      = $config['photoSize'] != null ? $config['photoSize'] : 800;
 $config['showGooglePlus'] = $config['showGooglePlus'] != null ? $config['showGooglePlus'] : 0;
+$config['albumSlideshow'] = $config['albumSlideshow'] != null ? $config['albumSlideshow'] : 1;
 
 // General settings
 print '<h3>'.__('General settings', 'kpicasa_gallery').'</h3>';
@@ -69,7 +71,7 @@ print '</tr>';
 print '<tr valign="top">';
 print '<th scope="row">'.__('Thumbnails size', 'kpicasa_gallery').':</th>';
 print '<td><select name="kpicasa_gallery_config[albumThumbSize]">';
-foreach(array(32, 48, 64, 72, 144, 160) as $value)
+foreach(array(32, 48, 64, 72, 104, 144, 150, 160) as $value)
 {
 	$sel = $config['albumThumbSize'] == $value ? ' selected="selected"' : '';
 	print '<option value="'.$value.'"'.$sel.'>'.$value.' '.__('pixels', 'kpicasa_gallery').'</option>';
@@ -124,6 +126,17 @@ print '<td><select name="kpicasa_gallery_config[photoThumbSize]">';
 foreach(array(72, 144, 288) as $value)
 {
 	$sel = $config['photoThumbSize'] == $value ? ' selected="selected"' : '';
+	print '<option value="'.$value.'"'.$sel.'>'.$value.' '.__('pixels', 'kpicasa_gallery').'</option>';
+}
+print '</select></td>';
+print '</tr>';
+
+print '<tr valign="top">';
+print '<th scope="row">'.__('Image size', 'kpicasa_gallery').':</th>';
+print '<td><select name="kpicasa_gallery_config[photoSize]">';
+foreach(array(94, 110, 128, 200, 220, 288, 320, 400, 512, 576, 640, 720, 800, 912, 1024, 1152, 1280, 1440, 1600) as $value)
+{
+	$sel = $config['photoSize'] == $value ? ' selected="selected"' : '';
 	print '<option value="'.$value.'"'.$sel.'>'.$value.' '.__('pixels', 'kpicasa_gallery').'</option>';
 }
 print '</select></td>';
