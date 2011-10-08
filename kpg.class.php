@@ -109,67 +109,77 @@ if ( !class_exists('KPicasaGallery') )
 			// Loop through the albums
 			//----------------------------------------
 			print '<table cellpadding="0" cellspacing="0" border="0" width="100%" id="kpg-albums">';
-			$i = 0; $j = 0;
+
+			$i = -1; $j = 0;
 			foreach( $xml->entry as $album )
 			{
-				if ($i >= $start && $i <= $stop &&
-				( !count($this->showOnlyAlbums) || in_array((string) $album->gphoto_name, $this->showOnlyAlbums) ))
-				{
-					if ( $j % $this->config['albumPerRow'] == 0 )
-					{
-						$remainingWidth = 100;
-						if ($j > 0)
-						{
-							print '</tr>';
-						}
-						print '<tr>';
-					}
-
-					// if last cell of the row, simply put remaining width
-					$width = ( ($j+1) % $this->config['albumPerRow'] == 0 ) ? $remainingWidth : round( 100 / $this->config['albumPerRow'] );
-					$remainingWidth -= $width;
-					print "<td width='$width%'>";
-
-					$name      = (string) $album->gphoto_name;
-					$title     = wp_specialchars( (string) $album->title );
-					$summary   = wp_specialchars( (string) $album->summary );
-					$location  = wp_specialchars( (string) $album->gphoto_location );
-					$published = wp_specialchars( date($this->config['dateFormat'], strtotime( $album->published ))); // that way it keeps the timezone
-					$nbPhotos  = (string) $album->gphoto_numphotos;
-					$albumURL  = add_query_arg('album', $name, $url);
-					$thumbURL  = (string) $album->media_group->media_thumbnail['url'];
-					$thumbW    = (string) $album->media_group->media_thumbnail['width'];
-					$thumbH    = (string) $album->media_group->media_thumbnail['height'];
-
-					if ( $this->config['albumThumbSize'] != false && $this->config['albumThumbSize'] != 160 )
-					{
-						$thumbURL = str_replace('/s160-c/', '/s'.$this->config['albumThumbSize'].'-c/', $thumbURL);
-						$thumbH   = round( ($this->config['albumThumbSize'] / $thumbH) * $thumbH );
-						$thumbW   = round( ($this->config['albumThumbSize'] / $thumbW) * $thumbW );
-					}
-
-					print "<a href='$albumURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $title)."' class='kpg-thumb $class' /></a>";
-					print "<div class='kpg-title'><a href='$albumURL'>$title</a></div>";
-					if ( $this->config['albumSummary'] == true && strlen($summary) )
-					{
-						print "<div class='kpg-summary'>$summary</div>";
-					}
-					if ( $this->config['albumLocation'] == true && strlen($location) )
-					{
-						print "<div class='kpg-location'>$location</div>";
-					}
-					if ( $this->config['albumPublished'] == true )
-					{
-						print "<div class='kpg-published'>$published</div>";
-					}
-					if ( $this->config['albumNbPhoto'] == 1 )
-					{
-						print '<div class="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $nbPhotos, 'kpicasa_gallery'), $nbPhotos).'</div>';
-					}
-					print '</td>';
-					$j++;
-				}
 				$i++;
+				if ( count($this->showOnlyAlbums) && !in_array((string) $album->gphoto_name, $this->showOnlyAlbums) )
+				{
+					continue;
+				}
+				if ( $this->config['showGooglePlus'] == 0 && in_array((string) $album->gphoto_name, array('ScrapbookPhotos', 'ProfilePhotos')) )
+				{
+					continue;
+				}
+				if ($i < $start || $i > $stop)
+				{
+					continue;
+				}
+
+				if ( $j % $this->config['albumPerRow'] == 0 )
+				{
+					$remainingWidth = 100;
+					if ($j > 0)
+					{
+						print '</tr>';
+					}
+					print '<tr>';
+				}
+
+				// if last cell of the row, simply put remaining width
+				$width = ( ($j+1) % $this->config['albumPerRow'] == 0 ) ? $remainingWidth : round( 100 / $this->config['albumPerRow'] );
+				$remainingWidth -= $width;
+				print "<td width='$width%'>";
+
+				$name      = (string) $album->gphoto_name;
+				$title     = wp_specialchars( (string) $album->title );
+				$summary   = wp_specialchars( (string) $album->summary );
+				$location  = wp_specialchars( (string) $album->gphoto_location );
+				$published = wp_specialchars( date($this->config['dateFormat'], strtotime( $album->published ))); // that way it keeps the timezone
+				$nbPhotos  = (string) $album->gphoto_numphotos;
+				$albumURL  = add_query_arg('album', $name, $url);
+				$thumbURL  = (string) $album->media_group->media_thumbnail['url'];
+				$thumbW    = (string) $album->media_group->media_thumbnail['width'];
+				$thumbH    = (string) $album->media_group->media_thumbnail['height'];
+
+				if ( $this->config['albumThumbSize'] != false && $this->config['albumThumbSize'] != 160 )
+				{
+					$thumbURL = str_replace('/s160-c/', '/s'.$this->config['albumThumbSize'].'-c/', $thumbURL);
+					$thumbH   = round( ($this->config['albumThumbSize'] / $thumbH) * $thumbH );
+					$thumbW   = round( ($this->config['albumThumbSize'] / $thumbW) * $thumbW );
+				}
+
+				print "<a href='$albumURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $title)."' class='kpg-thumb $class' /></a>";
+				print "<div class='kpg-title'><a href='$albumURL'>$title</a></div>";
+				if ( $this->config['albumSummary'] == true && strlen($summary) )
+				{
+					print "<div class='kpg-summary'>$summary</div>";
+				}
+				if ( $this->config['albumLocation'] == true && strlen($location) )
+				{
+					print "<div class='kpg-location'>$location</div>";
+				}
+				if ( $this->config['albumPublished'] == true )
+				{
+					print "<div class='kpg-published'>$published</div>";
+				}
+				if ( $this->config['albumNbPhoto'] == 1 )
+				{
+					print '<div class="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $nbPhotos, 'kpicasa_gallery'), $nbPhotos).'</div>';
+				}
+				print '</td>';
+				$j++;
 			}
 
 			// never leave the last row with insuficient cells

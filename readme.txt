@@ -1,7 +1,7 @@
 === kPicasa Gallery ===
 Tags: picasa, gallery, photo
 Requires at least: 2.2
-Tested up to: 3.0
+Tested up to: 3.2.1
 Stable tag: trunk
 
 Display your Picasa Web Galleries in a post or in a page.
@@ -58,8 +58,8 @@ You would have to use the following syntax:
 `KPICASA_GALLERY(TripToEurope#Gv1sRgCILA9ebdxLyZaQ)`
 
 = Show albums from an alternative Picasa account =
+**Please note that you can't combine multiple accounts into the same post or page.**
+
 If you have more than one Picasa account, you can show the albums from another
 account by calling kPicasa Gallery like this:
 `KPICASA_GALLERY(username:YourOtherUsername)`
-
-**Please note that you can't combine multiple accounts into the same post or page.**
