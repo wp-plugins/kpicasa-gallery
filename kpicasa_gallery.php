@@ -3,7 +3,7 @@
 Plugin Name: kPicasa Gallery
 Plugin URI: http://www.boloxe.com/techblog/
 Description: Display your Picasa Web Galleries in a post or in a page.
-Version: 0.2.6
+Version: 0.2.7
 Author: Guillaume Hébert
 
 Version History
@@ -247,22 +247,39 @@ function kpicasa_gallery_config_sanitize($input)
 	{
 		$input['picEngine'] = 'highslide';
 	}
-	if ( !in_array($input['albumThumbSize'], array(32, 48, 64, 72, 104, 144, 150, 160)) )
+
+	if ( $input['albumThumbSize'] > 1600 )
+	{
+		$input['albumThumbSize'] = 1600;
+	}
+	elseif ( $input['albumThumbSize'] == 0 )
 	{
 		$input['albumThumbSize'] = 160;
 	}
-	if ( !in_array($input['photoThumbSize'], array(32, 48, 64, 72, 104, 144, 150, 160)) )
+
+	if ( $input['photoThumbSize'] > 1000 )
 	{
-		$input['photoThumbSize'] = 160;
+		$input['photoThumbSize'] = 1000;
 	}
-	if ( !in_array($input['photoSize'], array(94, 110, 128, 200, 220, 288, 320, 400, 512, 576, 640, 720, 800, 912, 1024, 1152, 1280, 1440, 1600)) )
+	elseif ( $input['photoThumbSize'] == 0 )
+	{
+		$input['photoThumbSize'] = 144;
+	}
+
+	if ( $input['photoSize'] > 1000 )
+	{
+		$input['photoSize'] = 1000;
+	}
+	elseif ( $input['photoSize'] == 0 )
 	{
 		$input['photoSize'] = 800;
 	}
+
 	if ( $input['albumPerRow'] == 0 )
 	{
 		$input['albumPerRow'] = 1;
 	}
+
 	if ( $input['photoPerRow'] == 0 )
 	{
 		$input['photoPerRow'] = 2;

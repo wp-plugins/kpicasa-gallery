@@ -110,10 +110,9 @@ if ( !class_exists('KPicasaGallery') )
 			//----------------------------------------
 			print '<table cellpadding="0" cellspacing="0" border="0" width="100%" id="kpg-albums">';
 
-			$i = -1; $j = 0;
+			$i = -1; $j = -1;
 			foreach( $xml->entry as $album )
 			{
-				$i++;
 				if ( count($this->showOnlyAlbums) && !in_array((string) $album->gphoto_name, $this->showOnlyAlbums) )
 				{
 					continue;
@@ -122,10 +121,13 @@ if ( !class_exists('KPicasaGallery') )
 				{
 					continue;
 				}
+
+				$i++;
 				if ($i < $start || $i > $stop)
 				{
 					continue;
 				}
+				$j++;
 
 				if ( $j % $this->config['albumPerRow'] == 0 )
 				{
@@ -156,8 +158,8 @@ if ( !class_exists('KPicasaGallery') )
 				if ( $this->config['albumThumbSize'] != null && $this->config['albumThumbSize'] != 160 )
 				{
 					$thumbURL = str_replace('/s160-c/', '/s'.$this->config['albumThumbSize'].'-c/', $thumbURL);
-					$thumbH   = round( ($this->config['albumThumbSize'] / $thumbH) * $thumbH );
-					$thumbW   = round( ($this->config['albumThumbSize'] / $thumbW) * $thumbW );
+					$thumbH   = floor( ($this->config['albumThumbSize'] / 160) * $thumbH );
+					$thumbW   = floor( ($this->config['albumThumbSize'] / 160) * $thumbW );
 				}
 
 				print "<a href='$albumURL'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='".str_replace("'", "&#39;", $title)."' class='kpg-thumb $class' /></a>";
@@ -179,7 +181,6 @@ if ( !class_exists('KPicasaGallery') )
 					print '<div class="kpg-nbPhotos">'.sprintf(__ngettext('%d photo', '%d photos', $nbPhotos, 'kpicasa_gallery'), $nbPhotos).'</div>';
 				}
 				print '</td>';
-				$j++;
 			}
 
 			// never leave the last row with insuficient cells
@@ -199,7 +200,7 @@ if ( !class_exists('KPicasaGallery') )
 			//----------------------------------------
 			// Paginator
 			//----------------------------------------
-			$nbItems = count($this->showOnlyAlbums) > 0 ? count($this->showOnlyAlbums) : count($xml->entry);
+			$nbItems = count($this->showOnlyAlbums) > 0 ? count($this->showOnlyAlbums) : $i + 1;
 			$this->paginator( $page, 'kpgp', $this->config['albumPerPage'], $nbItems );
 			return true;
 		}
@@ -293,25 +294,20 @@ if ( !class_exists('KPicasaGallery') )
 				$stop = count( $xml->entry ) - 1;
 			}
 
-			$thumbIndex = 1; // 144px
-			if ( $this->config['photoThumbSize'] == 72 )
-			{
-				$thumbIndex = 0;
-			}
-			elseif ( $this->config['photoThumbSize'] == 288 )
-			{
-				$thumbIndex = 2;
-			}
-
 			//----------------------------------------
 			// Loop through the pictures
 			//----------------------------------------
 			print '<table cellpadding="0" cellspacing="0" border="0" width="100%" id="kpg-pictures">';
-			$i = 0; $j = 0;
+			$i = -1; $j = -1;
 			foreach( $xml->entry as $photo )
 			{
-				if ($i >= $start && $i <= $stop)
+				$i++;
+				if ($i < $start || $i > $stop)
 				{
+					continue;
+				}
+				$j++;
+
 					if ($j % $this->config['photoPerRow'] == 0)
 					{
 						$remainingWidth = 100;
@@ -330,9 +326,16 @@ if ( !class_exists('KPicasaGallery') )
 					$isVideo = (string) $photo->media_group->media_content[1]['medium'] == 'video' ? true : false;
 
 					$summary  = wp_specialchars( (string) $photo->summary );
-					$thumbURL = (string) $photo->media_group->media_thumbnail[$thumbIndex]['url'];
-					$thumbW   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['width'];
-					$thumbH   = (string) $photo->media_group->media_thumbnail[$thumbIndex]['height'];
+					$thumbURL = (string) $photo->media_group->media_thumbnail[1]['url'];
+					$thumbW   = (string) $photo->media_group->media_thumbnail[1]['width'];
+					$thumbH   = (string) $photo->media_group->media_thumbnail[1]['height'];
+
+					if ( $this->config['photoThumbSize'] != null && $this->config['photoThumbSize'] != 144 )
+					{
+						$thumbURL = str_replace('/s144/', '/s'.$this->config['photoThumbSize'].'/', $thumbURL);
+						$thumbH   = floor( ($this->config['photoThumbSize'] / 144) * $thumbH );
+						$thumbW   = floor( ($this->config['photoThumbSize'] / 144) * $thumbW );
+					}
 
 					if ( $isVideo == true )
 					{
@@ -496,9 +499,6 @@ if ( !class_exists('KPicasaGallery') )
 						}
 					}
 					print '</td>';
-					$j++;
-				}
-				$i++;
 			}
 
 			// never leave the last row with insuficient cells
