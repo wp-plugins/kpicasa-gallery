@@ -8,8 +8,8 @@ Display your Picasa Web Galleries in a post or in a page.
 
 == Description ==
 
-** ATTENTION: because of licencing issues, Highslide has been removed from kPicasa
-Gallery. I apologize to everyone for the inconvenience. **
+**ATTENTION: because of licencing issues, Highslide has been removed from kPicasa
+Gallery. I apologize to everyone for the inconvenience.**
 
 This plugin displays your Picasa Web Galleries in a post or in a page simply by
 creating a post or a page with a special keyword. All the images are kept on the
