@@ -71,20 +71,7 @@ if ( !is_admin() )
 
 	wp_enqueue_style('kpicasa', plugins_url('kpicasa_gallery.css', __FILE__), false, KPICASA_GALLERY_VERSION, 'screen');
 
-	if ( $kpg_config['picEngine'] == 'highslide' )
-	{
-		$highslide_version = '4.1.8';
-		wp_enqueue_script('highslide', plugins_url('highslide/highslide.js', __FILE__), array('swfobject'), $highslide_version);
-		wp_enqueue_style('highslide', plugins_url('highslide/highslide.css', __FILE__), false, $highslide_version, 'screen');
-
-		// really it should be "if < IE7", but I'm too lazy
-		// Based on: http://www.useragentstring.com/pages/Internet%20Explorer/
-		if ( strpos($_SERVER['HTTP_USER_AGENT'], 'MSIE 6.') !== false )
-		{
-			wp_enqueue_style('highslide-ie6', plugins_url('highslide/highslide-styles-ie6.css', __FILE__), false, $highslide_version, 'screen');
-		}
-	}
-	elseif ( $kpg_config['picEngine'] == 'lightbox' )
+	if ( $kpg_config['picEngine'] == 'lightbox' )
 	{
 		$lightbox_version = '2.04';
 		wp_enqueue_script('lightbox2', plugins_url('lightbox2/js/lightbox.js', __FILE__), array('prototype', 'scriptaculous-effects', 'scriptaculous-builder'), $lightbox_version);
@@ -124,21 +111,7 @@ function kpicasa_gallery_init()
 {
 	global $kpg_config;
 
-	if ( $kpg_config['picEngine'] == 'highslide' )
-	{
-		$picEngineDir = plugins_url('highslide', __FILE__);
-
-		print "<script type='text/javascript'>\n";
-		print "	hs.graphicsDir = '$picEngineDir/graphics/';\n";
-		print "	hs.align       = 'center';\n";
-		print "	hs.transitions = ['expand', 'crossfade'];\n";
-		print "	hs.outlineType = 'rounded-white';\n";
-		print "	hs.showCredits = false;\n";
-		print "	hs.fadeInOut   = true;\n";
-		print "	hs.addSlideshow({ interval: 5000, repeat: false, useControls: true, fixedControls: 'fit', overlayOptions: { opacity: .75, position: 'bottom center', hideOnMouseOut: true } });\n";
-		print "</script>\n";
-	}
-	elseif ( $kpg_config['picEngine'] == 'lightbox' )
+	if ( $kpg_config['picEngine'] == 'lightbox' )
 	{
 		$picEngineDir = plugins_url('lightbox2', __FILE__);
 
@@ -243,9 +216,9 @@ function kpicasa_gallery_config_sanitize($input)
 	$input['albumSlideshow'] = $input['albumSlideshow'] == 1 ? 1 : 0;
 	$input['showGooglePlus'] = $input['showGooglePlus'] == 1 ? 1 : 0;
 
-	if ( !in_array($input['picEngine'], array('highslide', 'lightbox', 'slimbox2', 'thickbox', 'shadowbox', 'fancybox', '')) )
+	if ( !in_array($input['picEngine'], array('lightbox', 'slimbox2', 'thickbox', 'shadowbox', 'fancybox', '')) )
 	{
-		$input['picEngine'] = 'highslide';
+		$input['picEngine'] = 'slimbox2';
 	}
 
 	if ( $input['albumThumbSize'] > 1600 )

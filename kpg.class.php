@@ -344,27 +344,7 @@ if ( !class_exists('KPicasaGallery') )
 						$videoWidth  = (string) $photo->media_group->media_content[0]['width'];
 						$videoHeight = (string) $photo->media_group->media_content[0]['height'];
 
-						if ( $this->config['picEngine'] == 'highslide' )
-						{
-							$onclick  = "onclick='return hs.htmlExpand(this, ";
-							$onclick .= "{ objectType: \"swf\", ";
-							$onclick .= "width: $videoWidth, height: ".(75 + $videoHeight).", objectWidth: $videoWidth, objectHeight: $videoHeight, ";
-							$onclick .= "wrapperClassName: \"draggable-header no-footer\", ";
-							$onclick .= "allowSizeReduction: false, preserveContent: false, ";
-							$onclick .= "maincontentText: \"".__('You need to upgrade your Flash player', 'kpicasa_gallery')."\" } )'";
-
-							if ( strlen($summary) )
-							{
-								print "<a href='$fullURL' $onclick class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' title='".str_replace("'", "&#39;", $summary)."' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-								print "<div class='kpg-summary'>$summary</div>";
-								print "<div class='highslide-caption'>$summary</div>";
-							}
-							else
-							{
-								print "<a href='$fullURL' $onclick class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
-							}
-						}
-						elseif ( in_array($this->config['picEngine'], array('thickbox', 'shadowbox', 'fancybox')) )
+						if ( in_array($this->config['picEngine'], array('thickbox', 'shadowbox', 'fancybox')) )
 						{
 							if ( in_array($this->config['picEngine'], array('thickbox', 'fancybox')) )
 							{
@@ -439,20 +419,7 @@ if ( !class_exists('KPicasaGallery') )
 							$fullURL = str_replace('/s144/', '/s800/', $fullURL);
 						}
 
-						if ( $this->config['picEngine'] == 'highslide' )
-						{
-							if ( strlen($summary) )
-							{
-								print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' title='".str_replace("'", "&#39;", $summary)."' alt='".str_replace("'", "&#39;", $summary)."' class='kpg-thumb' /></a>";
-								print "<div class='kpg-summary'>$summary</div>";
-								print "<div class='highslide-caption'>$summary</div>";
-							}
-							else
-							{
-								print "<a href='$fullURL' rel='highslide' class='highslide'><img src='$thumbURL' height='$thumbH' width='$thumbW' alt='' class='kpg-thumb' /></a>";
-							}
-						}
-						elseif ( in_array($this->config['picEngine'], array('lightbox', 'slimbox2', 'thickbox', 'shadowbox', 'fancybox')) )
+						if ( in_array($this->config['picEngine'], array('lightbox', 'slimbox2', 'thickbox', 'shadowbox', 'fancybox')) )
 						{
 							if ( $this->config['picEngine'] == 'lightbox' )
 							{

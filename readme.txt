@@ -8,6 +8,9 @@ Display your Picasa Web Galleries in a post or in a page.
 
 == Description ==
 
+** ATTENTION: because of licencing issues, Highslide has been removed from kPicasa
+Gallery. I apologize to everyone for the inconvenience. **
+
 This plugin displays your Picasa Web Galleries in a post or in a page simply by
 creating a post or a page with a special keyword. All the images are kept on the
 Picasa Web Gallery server.
@@ -17,11 +20,11 @@ Picasa Web Gallery server.
 If enabled and properly configured, kPicasa Gallery will use the WP-Cache
 mechanism.
 
-You have to choice of using either Highslide, Lightbox, Slimbox, Thickbox or
+You have to choice of using either Lightbox, Slimbox, Thickbox or
 Fancybox for displaying the large version of your photos.
 
-Highslide and Slimbox support playing videos directly from your site. Selecting
-another engine will open a new window to the original Picasa URL.
+Slimbox support playing videos directly from your site. Selecting another
+engine will open a new window to the original Picasa URL.
 
 == Installation ==
 

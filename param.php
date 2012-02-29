@@ -20,6 +20,11 @@ $config['albumThumbSize'] = $config['albumThumbSize'] != null ? $config['albumTh
 $config['photoThumbSize'] = $config['photoThumbSize'] != null ? $config['photoThumbSize'] : 144;
 $config['photoSize']      = $config['photoSize'] != null ? $config['photoSize'] : 800;
 
+if ( $config['picEngine'] == 'highslide' )
+{
+	print '<p><strong>'.__('ATTENTION: because of licencing issues, Highslide has been removed from kPicasa Gallery. Please select another engine for full-sized pictures. I apologize to everyone for the inconvenience.', 'kpicasa_gallery').'</strong></p>';
+}
+
 // General settings
 print '<h3>'.__('General settings', 'kpicasa_gallery').'</h3>';
 print '<table class="form-table">';
@@ -33,10 +38,8 @@ print '</tr>';
 // Picture engine
 print '<tr valign="top">';
 print '<th scope="row">'.__('Engine for full-sized pictures', 'kpicasa_gallery').':</th>';
-$chk = $config['picEngine'] == 'highslide' ? ' checked="checked"' : '';
-print '<td><input type="radio" name="kpicasa_gallery_config[picEngine]" value="highslide"'.$chk.' /> <a href="http://vikjavev.no/highslide/" target="_blank">Highslide</a><br/>';
 $chk = $config['picEngine'] == 'shadowbox' ? ' checked="checked"' : '';
-print '<input type="radio" name="kpicasa_gallery_config[picEngine]" value="shadowbox"'.$chk.' /> <a href="http://www.shadowbox-js.com/" target="_blank">Shadowbox</a><br />';
+print '<td><input type="radio" name="kpicasa_gallery_config[picEngine]" value="shadowbox"'.$chk.' /> <a href="http://www.shadowbox-js.com/" target="_blank">Shadowbox</a><br />';
 $chk = $config['picEngine'] == 'fancybox' ? ' checked="checked"' : '';
 print '<input type="radio" name="kpicasa_gallery_config[picEngine]" value="fancybox"'.$chk.' /> <a href="http://fancybox.net/" target="_blank">Fancybox</a> - '.__('Buggy video playback, author working on a new version.', 'kpicasa_gallery').'<br />';
 $chk = $config['picEngine'] == 'thickbox' ? ' checked="checked"' : '';
